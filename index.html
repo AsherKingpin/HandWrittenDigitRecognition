@@ -575,17 +575,8 @@
 
         async function loadLocalModel() {
             try {
-                // For demo purposes, create a simple model structure
-                localModel = tf.sequential({
-                    layers: [
-                        tf.layers.flatten({ inputShape: [28, 28, 1] }),
-                        tf.layers.dense({ units: 128, activation: 'relu' }),
-                        tf.layers.dropout({ rate: 0.2 }),
-                        tf.layers.dense({ units: 10, activation: 'softmax' })
-                    ]
-                });
-                // In a real implementation, load from a repository
-                // localModel = await tf.loadLayersModel('https://raw.githubusercontent.com/AsherKingpin/HandWrittenDigitRecognition/main/model.json');
+                
+                localModel = await tf.loadLayersModel('https://raw.githubusercontent.com/AsherKingpin/HandWrittenDigitRecognition/main/model.json');
                 
                 document.getElementById('localModelStatus').className = 'status-dot ready';
                 console.log('Local model loaded successfully');
@@ -599,17 +590,8 @@
 
         async function loadHuggingFaceModel() {
             try {
-                // Demo implementation
-                hfModel = tf.sequential({
-                    layers: [
-                        tf.layers.flatten({ inputShape: [28, 28, 1] }),
-                        tf.layers.dense({ units: 256, activation: 'relu' }),
-                        tf.layers.dense({ units: 128, activation: 'relu' }),
-                        tf.layers.dense({ units: 10, activation: 'softmax' })
-                    ]
-                });
-                // In a real implementation, use Hugging Face's model hub
-                // hfModel = await tf.loadLayersModel('https://huggingface.co/model-endpoint');
+                
+                hfModel = await tf.loadLayersModel('https://huggingface.co/model-endpoint');
                 
                 document.getElementById('hfModelStatus').className = 'status-dot ready';
                 console.log('Hugging Face model loaded successfully');
