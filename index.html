@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DigitFlix - MNIST Classifier Comparison</title>
+    <title>DigitFlix - MNIST Classifier</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.10.0/tf.min.js"></script>
     <style>
         * {
@@ -211,48 +211,37 @@
             transform: none;
             box-shadow: none;
         }
-        .comparison-results {
+        .recognition-result {
             display: none;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin: 50px 0;
-            max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .model-result {
             background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
             border-radius: 20px;
             padding: 40px;
             text-align: center;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
+            border: 2px solid #e50914;
+            margin: 50px auto;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(229,9,20,0.3);
             backdrop-filter: blur(10px);
         }
-        .model-result.winner {
-            border-color: #e50914;
-            box-shadow: 0 20px 40px rgba(229,9,20,0.3);
-            transform: scale(1.05);
-        }
         .model-title {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             margin-bottom: 30px;
             color: #e50914;
         }
         .result-digit {
-            font-size: 80px;
+            font-size: 120px;
             font-weight: bold;
             margin-bottom: 20px;
-            text-shadow: 0 0 20px rgba(229,9,20,0.5);
+            text-shadow: 0 0 30px rgba(229,9,20,0.7);
         }
         .result-confidence {
-            font-size: 18px;
+            font-size: 24px;
             color: #b3b3b3;
             margin-bottom: 15px;
         }
         .result-time {
-            font-size: 14px;
+            font-size: 16px;
             color: #666;
         }
         .section-title {
@@ -331,36 +320,27 @@
             background: white;
             border: 2px solid #333;
         }
-        .result-comparison {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 15px 0;
-        }
         .model-prediction {
             background: rgba(255,255,255,0.05);
             padding: 15px;
             border-radius: 10px;
             border: 1px solid #333;
+            margin-bottom: 15px;
         }
         .model-name {
-            font-size: 12px;
+            font-size: 14px;
             color: #888;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
         .prediction-digit {
-            font-size: 24px;
+            font-size: 36px;
             font-weight: bold;
             color: #e50914;
+            margin-bottom: 5px;
         }
         .prediction-confidence {
-            font-size: 11px;
+            font-size: 14px;
             color: #b3b3b3;
-        }
-        .result-time {
-            font-size: 12px;
-            color: #666;
-            margin-top: 10px;
         }
         .no-results {
             text-align: center;
@@ -427,10 +407,6 @@
                 flex-direction: column;
                 align-items: center;
             }
-            .comparison-results {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
             .model-status {
                 flex-direction: column;
                 gap: 15px;
@@ -454,16 +430,12 @@
     </div>
     <div class="main-content">
         <div class="hero-section">
-            <h1 class="hero-title">MNIST Classifier Comparison</h1>
-            <p class="hero-subtitle">Compare your custom model with Hugging Face pretrained models</p>
+            <h1 class="hero-title">MNIST Digit Classifier</h1>
+            <p class="hero-subtitle">Powered by Hugging Face Transformer Model</p>
             <div class="model-status">
                 <div class="model-indicator">
-                    <div class="status-dot loading" id="localModelStatus"></div>
-                    <span>Your Local Model</span>
-                </div>
-                <div class="model-indicator">
                     <div class="status-dot loading" id="hfModelStatus"></div>
-                    <span>Hugging Face Model</span>
+                    <span>🤗 Hugging Face Model</span>
                 </div>
             </div>
         </div>
@@ -489,27 +461,19 @@
             <button class="control-btn" id="startCameraBtn" onclick="startCamera()" style="display: none;">🎥 Start Camera</button>
             <button class="control-btn" id="captureBtn" onclick="capturePhoto()" style="display: none;">📸 Capture Photo</button>
             <button class="control-btn" id="stopCameraBtn" onclick="stopCamera()" style="display: none;">⏹️ Stop Camera</button>
-            <button class="control-btn primary" id="recognizeBtn" onclick="recognizeDigit()" disabled>🧠 Analyze with Both Models</button>
+            <button class="control-btn primary" id="recognizeBtn" onclick="recognizeDigit()" disabled>🧠 Recognize Digit</button>
             <button class="control-btn" id="downloadBtn" onclick="downloadImage()" style="display: none;">💾 Download Image</button>
         </div>
         <div class="loading" id="loadingDiv">
             <div class="spinner"></div>
-            <div>Processing with AI models...</div>
+            <div>Processing with AI model...</div>
         </div>
         <div class="status-message" id="statusMessage"></div>
-        <div class="comparison-results" id="comparisonResults">
-            <div class="model-result" id="localResult">
-                <div class="model-title">🏠 Your Local MNIST Model</div>
-                <div class="result-digit" id="localDigit">-</div>
-                <div class="result-confidence" id="localConfidence">Processing...</div>
-                <div class="result-time" id="localTime">-</div>
-            </div>
-            <div class="model-result" id="hfResult">
-                <div class="model-title">🤗 Hugging Face Model</div>
-                <div class="result-digit" id="hfDigit">-</div>
-                <div class="result-confidence" id="hfConfidence">Processing...</div>
-                <div class="result-time" id="hfTime">-</div>
-            </div>
+        <div class="recognition-result" id="recognitionResult">
+            <div class="model-title">🤗 Hugging Face MNIST Model</div>
+            <div class="result-digit" id="resultDigit">-</div>
+            <div class="result-confidence" id="resultConfidence">Processing...</div>
+            <div class="result-time" id="resultTime">-</div>
         </div>
         <h2 class="section-title">Recognition History</h2>
         <div class="results-container" id="resultsContainer">
@@ -521,7 +485,6 @@
         let cameraStream = null;
         let currentImageData = null;
         let results = [];
-        let localModel = null;
         let hfModel = null;
 
         // Initialize application
@@ -534,8 +497,8 @@
             // Setup file upload handler
             document.getElementById('imageUpload').addEventListener('change', handleFileUpload);
             
-            // Load models
-            await loadModels();
+            // Load model
+            await loadModel();
         }
 
         // Update clock display
@@ -550,55 +513,32 @@
             // Optionally, use navigator.geolocation for real location data
         }
 
-        // Load AI models
-        async function loadModels() {
+        // Load AI model
+        async function loadModel() {
             try {
-                // Load your local model
-                showStatus('Loading your custom MNIST model...', 'info');
-                await loadLocalModel();
-                
-                // Load Hugging Face model
-                showStatus('Loading Hugging Face model...', 'info');
+                showStatus('Loading Hugging Face MNIST model...', 'info');
                 await loadHuggingFaceModel();
-                
-                showStatus('Both models loaded successfully! Ready for digit recognition.', 'success');
+                showStatus('Model loaded successfully! Ready for digit recognition.', 'success');
                 
             } catch (error) {
                 console.error('Model loading error:', error);
-                showStatus('Models loaded in demo mode. Connect your actual models for real predictions.', 'info');
-                
-                // Set status to ready even in demo mode
-                document.getElementById('localModelStatus').className = 'status-dot ready';
+                showStatus('Model loaded in demo mode. Connect your actual model for real predictions.', 'info');
                 document.getElementById('hfModelStatus').className = 'status-dot ready';
             }
         }
 
-        async function loadLocalModel() {
+        async function loadHuggingFaceModel() {
             try {
-                
-                localModel = await tf.loadLayersModel('https://asherkingpin.github.io/HandWrittenDigitRecognition/model/model.json');
-
-                
-                document.getElementById('localModelStatus').className = 'status-dot ready';
-                console.log('Local model loaded successfully');
+                hfModel = await tf.loadLayersModel('https://huggingface.co/E7h4nHunt/MNIST_CNN/resolve/main/model.json');
+                document.getElementById('hfModelStatus').className = 'status-dot ready';
+                console.log('Hugging Face model loaded successfully');
                 
             } catch (error) {
-                console.error('Local model loading failed:', error);
-                document.getElementById('localModelStatus').className = 'status-dot error';
+                console.error('Hugging Face model loading failed:', error);
+                document.getElementById('hfModelStatus').className = 'status-dot error';
                 throw error;
             }
         }
-
-     async function loadHuggingFaceModel() {
-        try {
-            hfModel = await tf.loadLayersModel('https://huggingface.co/E7h4nHunt/MNIST_CNN/resolve/main/model.json');
-            document.getElementById('hfModelStatus').className = 'status-dot success';
-        } catch (error) {
-            console.error('Failed to load Hugging Face model:', error);
-            document.getElementById('hfModelStatus').className = 'status-dot error';
-        }
-    }
-
 
         // Input method selection
         function selectInputMethod(method) {
@@ -637,7 +577,7 @@
             document.getElementById('recognizeBtn').disabled = true;
             
             // Hide results
-            document.getElementById('comparisonResults').style.display = 'none';
+            document.getElementById('recognitionResult').style.display = 'none';
             
             // Stop camera if running
             if (cameraStream) {
@@ -671,7 +611,7 @@
                 document.getElementById('recognizeBtn').disabled = false;
                 document.getElementById('downloadBtn').style.display = 'inline-block';
                 
-                showStatus('Image uploaded successfully! Click "Analyze" to compare model predictions.', 'success');
+                showStatus('Image uploaded successfully! Click "Recognize Digit" to analyze.', 'success');
             };
             
             reader.readAsDataURL(file);
@@ -729,7 +669,7 @@
             video.style.display = 'none';
             stopCamera();
             
-            showStatus('Photo captured! Click "Analyze" to compare model predictions.', 'success');
+            showStatus('Photo captured! Click "Recognize Digit" to analyze.', 'success');
         }
 
         function stopCamera() {
@@ -756,7 +696,7 @@
             link.click();
         }
 
-        // Recognition function with real model integration
+        // Recognition function with Hugging Face model
         async function recognizeDigit() {
             if (!currentImageData) {
                 showStatus('Please upload an image or capture a photo first.', 'error');
@@ -764,38 +704,34 @@
             }
             
             const loading = document.getElementById('loadingDiv');
-            const resultsDiv = document.getElementById('comparisonResults');
+            const resultsDiv = document.getElementById('recognitionResult');
             
             loading.style.display = 'block';
             resultsDiv.style.display = 'none';
             
             try {
-                // Preprocess image for models
+                // Preprocess image for model
                 const processedImage = await preprocessImage(currentImageData);
                 
-                // Run both models
-                const localStartTime = performance.now();
-                const localResult = await runLocalModel(processedImage);
-                const localTime = performance.now() - localStartTime;
+                // Run Hugging Face model
+                const startTime = performance.now();
+                const result = await runHuggingFaceModel(processedImage);
+                const inferenceTime = performance.now() - startTime;
                 
-                const hfStartTime = performance.now();
-                const hfResult = await runHuggingFaceModel(processedImage);
-                const hfTime = performance.now() - hfStartTime;
-                
-                // Display results
-                displayResults(localResult, hfResult, localTime, hfTime);
+                // Display result
+                displayResult(result, inferenceTime);
                 
                 // Store result
-                storeResult(localResult, hfResult, localTime, hfTime);
+                storeResult(result, inferenceTime);
                 
-                showStatus('Recognition completed! Check the comparison results below.', 'success');
+                showStatus('Recognition completed! Check the result below.', 'success');
                 
             } catch (error) {
                 console.error('Recognition error:', error);
-                showStatus('Recognition failed: Models unavailable. Please try again later.', 'error');
+                showStatus('Recognition failed: Model unavailable. Please try again later.', 'error');
                 
                 // Display failure message
-                displayDemoResults();
+                displayDemoResult();
             }
             
             loading.style.display = 'none';
@@ -828,31 +764,6 @@
             });
         }
 
-        async function runLocalModel(preprocessedImage) {
-            try {
-                if (!localModel) {
-                    throw new Error('Local model not loaded');
-                }
-                
-                // Run prediction
-                const prediction = localModel.predict(preprocessedImage);
-                const probabilities = await prediction.data();
-                
-                // Get predicted digit and confidence
-                const maxIndex = probabilities.indexOf(Math.max(...probabilities));
-                const confidence = (probabilities[maxIndex] * 100).toFixed(2);
-                
-                return {
-                    digit: maxIndex,
-                    confidence: confidence,
-                    probabilities: probabilities
-                };
-            } catch (error) {
-                console.error('Local model prediction error:', error);
-                throw error;
-            }
-        }
-
         async function runHuggingFaceModel(preprocessedImage) {
             try {
                 if (!hfModel) {
@@ -878,65 +789,35 @@
             }
         }
 
-        function displayResults(localResult, hfResult, localTime, hfTime) {
-            const resultsDiv = document.getElementById('comparisonResults');
-            const localResultDiv = document.getElementById('localResult');
-            const hfResultDiv = document.getElementById('hfResult');
+        function displayResult(result, inferenceTime) {
+            const resultsDiv = document.getElementById('recognitionResult');
             
-            // Update local model result
-            document.getElementById('localDigit').textContent = localResult.digit;
-            document.getElementById('localConfidence').textContent = `Confidence: ${localResult.confidence}%`;
-            document.getElementById('localTime').textContent = `Inference Time: ${localTime.toFixed(2)}ms`;
+            // Update result display
+            document.getElementById('resultDigit').textContent = result.digit;
+            document.getElementById('resultConfidence').textContent = `Confidence: ${result.confidence}%`;
+            document.getElementById('resultTime').textContent = `Inference Time: ${inferenceTime.toFixed(2)}ms`;
             
-            // Update Hugging Face model result
-            document.getElementById('hfDigit').textContent = hfResult.digit;
-            document.getElementById('hfConfidence').textContent = `Confidence: ${hfResult.confidence}%`;
-            document.getElementById('hfTime').textContent = `Inference Time: ${hfTime.toFixed(2)}ms`;
-            
-            // Highlight winner (higher confidence)
-            localResultDiv.classList.remove('winner');
-            hfResultDiv.classList.remove('winner');
-            if (parseFloat(localResult.confidence) > parseFloat(hfResult.confidence)) {
-                localResultDiv.classList.add('winner');
-            } else if (parseFloat(hfResult.confidence) > parseFloat(localResult.confidence)) {
-                hfResultDiv.classList.add('winner');
-            }
-            
-            resultsDiv.style.display = 'grid';
+            resultsDiv.style.display = 'block';
         }
 
-        function displayDemoResults() {
-            const resultsDiv = document.getElementById('comparisonResults');
-            const localResultDiv = document.getElementById('localResult');
-            const hfResultDiv = document.getElementById('hfResult');
+        function displayDemoResult() {
+            const resultsDiv = document.getElementById('recognitionResult');
             
             // Reset result fields
-            document.getElementById('localDigit').textContent = '-';
-            document.getElementById('localConfidence').textContent = 'Model failed to load';
-            document.getElementById('localTime').textContent = '-';
-            
-            document.getElementById('hfDigit').textContent = '-';
-            document.getElementById('hfConfidence').textContent = 'Model failed to load';
-            document.getElementById('hfTime').textContent = '-';
-            
-            // Remove winner styling
-            localResultDiv.classList.remove('winner');
-            hfResultDiv.classList.remove('winner');
+            document.getElementById('resultDigit').textContent = '?';
+            document.getElementById('resultConfidence').textContent = 'Model failed to load';
+            document.getElementById('resultTime').textContent = '-';
             
             // Show the results section
-            resultsDiv.style.display = 'grid';
-            
-            // Optional: Show a status message for clarity
-            showStatus('Unable to process image: Models failed to load. Please try again later.', 'error');
+            resultsDiv.style.display = 'block';
         }
 
-        function storeResult(localResult, hfResult, localTime, hfTime) {
+        function storeResult(result, inferenceTime) {
             results.unshift({
                 image: currentImageData,
-                local: { digit: localResult.digit, confidence: localResult.confidence },
-                hf: { digit: hfResult.digit, confidence: hfResult.confidence },
-                localTime: localTime.toFixed(2),
-                hfTime: hfTime.toFixed(2),
+                digit: result.digit,
+                confidence: result.confidence,
+                time: inferenceTime.toFixed(2),
                 timestamp: new Date().toISOString()
             });
             
@@ -957,19 +838,12 @@
                 card.className = 'result-card';
                 card.innerHTML = `
                     <img src="${result.image}" class="result-image" alt="Digit">
-                    <div class="result-comparison">
-                        <div class="model-prediction">
-                            <div class="model-name">Local Model</div>
-                            <div class="prediction-digit">${result.local.digit}</div>
-                            <div class="prediction-confidence">Confidence: ${result.local.confidence}%</div>
-                        </div>
-                        <div class="model-prediction">
-                            <div class="model-name">Hugging Face</div>
-                            <div class="prediction-digit">${result.hf.digit}</div>
-                            <div class="prediction-confidence">Confidence: ${result.hf.confidence}%</div>
-                        </div>
+                    <div class="model-prediction">
+                        <div class="model-name">Hugging Face Model</div>
+                        <div class="prediction-digit">${result.digit}</div>
+                        <div class="prediction-confidence">Confidence: ${result.confidence}%</div>
                     </div>
-                    <div class="result-time">Local: ${result.localTime}ms | HF: ${result.hfTime}ms</div>
+                    <div class="result-time">Inference Time: ${result.time}ms</div>
                 `;
                 container.appendChild(card);
             });
