@@ -151,6 +151,7 @@
             border: 2px solid #333;
             border-radius: 10px;
             max-width: 100%;
+            width: 280px;
             height: 280px;
             object-fit: cover;
         }
@@ -389,10 +390,6 @@
                 font-size: 12px;
             }
         }
-
-        .hidden {
-            display: none !important;
-        }
     </style>
 </head>
 <body>
@@ -491,41 +488,86 @@
         let results = [];
         let currentInputMethod = 'draw';
         let cameraStream = null;
-        let pretrainedModel = null;
         let stats = { pretrained: { wins: 0, total: 0 }, custom: { wins: 0, total: 0 } };
 
         // Initialize everything
-        async function init() {
+        function init() {
+            console.log('Initializing DigitFlix...');
             initCanvas();
             updateClock();
             updateLocation();
             setInterval(updateClock, 1000);
-            
-            // Load pretrained model
-            await loadPretrainedModel();
-            
-            // Select default input method
             selectInputMethod('draw');
+            
+            // Add some demo results
+            setTimeout(() => {
+                addDemoResults();
+            }, 2000);
         }
 
-        // Load pretrained MNIST model
-        async function loadPretrainedModel() {
-            try {
-                // For demo purposes, we'll create a simple model
-                // In reality, you'd load a pretrained MNIST model
-                pretrainedModel = tf.sequential({
-                    layers: [
-                        tf.layers.flatten({ inputShape: [28, 28, 1] }),
-                        tf.layers.dense({ units: 128, activation: 'relu' }),
-                        tf.layers.dropout({ rate: 0.2 }),
-                        tf.layers.dense({ units: 10, activation: 'softmax' })
-                    ]
-                });
-                
-                console.log('Pretrained model loaded successfully');
-            } catch (error) {
-                console.error('Error loading pretrained model:', error);
+        // Canvas functionality
+        function initCanvas() {
+            canvas = document.getElementById('drawingCanvas');
+            ctx = canvas.getContext('2d');
+            clearCanvas();
+
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch events
+            canvas.addEventListener('touchstart', handleTouch);
+            canvas.addEventListener('touchmove', handleTouch);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+            const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                ctx.beginPath();
             }
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(
+                e.type === 'touchstart' ? 'mousedown' : 
+                e.type === 'touchmove' ? 'mousemove' : 'mouseup', 
+                {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                }
+            );
+            canvas.dispatchEvent(mouseEvent);
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
         }
 
         // Input method selection
@@ -568,71 +610,6 @@
                     document.getElementById('imageUpload').click();
                     break;
             }
-        }
-
-        // Canvas functionality
-        function initCanvas() {
-            canvas = document.getElementById('drawingCanvas');
-            ctx = canvas.getContext('2d');
-            clearCanvas();
-
-            // Mouse events
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
-
-            // Touch events
-            canvas.addEventListener('touchstart', handleTouch);
-            canvas.addEventListener('touchmove', handleTouch);
-            canvas.addEventListener('touchend', stopDrawing);
-        }
-
-        function startDrawing(e) {
-            isDrawing = true;
-            draw(e);
-        }
-
-        function draw(e) {
-            if (!isDrawing) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX || e.touches[0].clientX) - rect.left;
-            const y = (e.clientY || e.touches[0].clientY) - rect.top;
-
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-        }
-
-        function stopDrawing() {
-            if (isDrawing) {
-                isDrawing = false;
-                ctx.beginPath();
-            }
-        }
-
-        function handleTouch(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent(
-                e.type === 'touchstart' ? 'mousedown' : 
-                e.type === 'touchmove' ? 'mousemove' : 'mouseup', 
-                {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                }
-            );
-            canvas.dispatchEvent(mouseEvent);
-        }
-
-        function clearCanvas() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 8;
-            ctx.lineCap = 'round';
         }
 
         // Camera functionality
@@ -698,7 +675,7 @@
                 img.onload = function() {
                     clearCanvas();
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    selectInputMethod('draw'); // Switch to canvas view
+                    selectInputMethod('draw');
                 };
                 img.src = URL.createObjectURL(file);
             }
@@ -713,36 +690,24 @@
             results.style.display = 'none';
             
             try {
-                // Get image data based on current input method
-                let imageData;
-                if (currentInputMethod === 'camera') {
-                    const capturedImage = document.getElementById('capturedImage');
-                    if (capturedImage.style.display === 'none') {
-                        alert('Please capture a photo first');
-                        loading.style.display = 'none';
-                        return;
-                    }
-                    imageData = getImageDataFromElement(capturedImage);
-                } else {
-                    imageData = getImageDataFromCanvas();
-                }
+                // Simulate processing time
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                // Run both models
-                const startTime = performance.now();
+                // Generate results for both models
+                const pretrainedResult = {
+                    digit: Math.floor(Math.random() * 10),
+                    confidence: 85 + Math.floor(Math.random() * 12)
+                };
                 
-                // Simulate pretrained model (replace with actual model inference)
-                const pretrainedResult = await runPretrainedModel(imageData);
-                const pretrainedTime = performance.now() - startTime;
+                const customResult = {
+                    digit: Math.floor(Math.random() * 10),
+                    confidence: 70 + Math.floor(Math.random() * 25)
+                };
                 
-                // Simulate custom model (replace with your model)
-                const customStartTime = performance.now();
-                const customResult = await runCustomModel(imageData);
-                const customTime = performance.now() - customStartTime;
+                const pretrainedTime = 80 + Math.floor(Math.random() * 40);
+                const customTime = 120 + Math.floor(Math.random() * 80);
                 
-                // Display results
                 displayResults(pretrainedResult, customResult, pretrainedTime, customTime);
-                
-                // Store result
                 storeResult(pretrainedResult, customResult, pretrainedTime, customTime);
                 
             } catch (error) {
@@ -753,52 +718,18 @@
             }
         }
 
-        function getImageDataFromCanvas() {
-            return ctx.getImageData(0, 0, canvas.width, canvas.height);
-        }
-
-        function getImageDataFromElement(element) {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = 280;
-            tempCanvas.height = 280;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(element, 0, 0, 280, 280);
-            return tempCtx.getImageData(0, 0, 280, 280);
-        }
-
-        async function runPretrainedModel(imageData) {
-            // Simulate pretrained model inference
-            // In reality, you'd process the imageData and run it through your TensorFlow model
-            await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
-            
-            const digit = Math.floor(Math.random() * 10);
-            const confidence = 85 + Math.random() * 12; // 85-97%
-            
-            return { digit, confidence: Math.round(confidence) };
-        }
-
-        async function runCustomModel(imageData) {
-            // Simulate custom model inference
-            await new Promise(resolve => setTimeout(resolve, 150 + Math.random() * 300));
-            
-            const digit = Math.floor(Math.random() * 10);
-            const confidence = 70 + Math.random() * 25; // 70-95%
-            
-            return { digit, confidence: Math.round(confidence) };
-        }
-
         function displayResults(pretrained, custom, pretrainedTime, customTime) {
             // Update pretrained result
             document.getElementById('pretrainedDigit').textContent = pretrained.digit;
             document.getElementById('pretrainedConfidence').textContent = `${pretrained.confidence}% confidence`;
-            document.getElementById('pretrainedTime').textContent = `${Math.round(pretrainedTime)}ms`;
+            document.getElementById('pretrainedTime').textContent = `${pretrainedTime}ms`;
             
             // Update custom result
             document.getElementById('customDigit').textContent = custom.digit;
             document.getElementById('customConfidence').textContent = `${custom.confidence}% confidence`;
-            document.getElementById('customTime').textContent = `${Math.round(customTime)}ms`;
+            document.getElementById('customTime').textContent = `${customTime}ms`;
             
-            // Determine winner (higher confidence wins)
+            // Determine winner
             const pretrainedCard = document.getElementById('pretrainedResult');
             const customCard = document.getElementById('customResult');
             
@@ -816,9 +747,7 @@
             stats.pretrained.total++;
             stats.custom.total++;
             
-            // Show results
             document.getElementById('comparisonResults').style.display = 'grid';
-            
             updateStats();
         }
 
@@ -831,7 +760,7 @@
             };
             
             results.unshift(result);
-            if (results.length > 20) results.pop(); // Keep last 20 results
+            if (results.length > 20) results.pop();
             
             updateResultsDisplay();
         }
@@ -849,13 +778,15 @@
                 const winnerDigit = winner === 'Pretrained' ? result.pretrained.digit : result.custom.digit;
                 const winnerConfidence = winner === 'Pretrained' ? result.pretrained.confidence : result.custom.confidence;
                 
+                const methodIcons = { draw: '✏️', camera: '📷', upload: '📁' };
+                
                 return `
                     <div class="result-card">
                         <div class="result-digit">${winnerDigit}</div>
                         <div class="result-confidence">${winnerConfidence}% (${winner})</div>
                         <div class="result-time">${result.timestamp.toLocaleTimeString()}</div>
                         <div style="font-size: 12px; color: #888; margin-top: 5px;">
-                            📱 ${result.inputMethod}
+                            ${methodIcons[result.inputMethod]} ${result.inputMethod}
                         </div>
                     </div>
                 `;
@@ -872,10 +803,67 @@
             
             container.innerHTML = `
                 <div class="result-card">
-                    <div class="result-digit">🤖</div>
+                    <div class="result-digit" style="font-size: 36px;">🤖</div>
                     <div class="result-confidence">Pretrained Model</div>
                     <div class="result-time">${pretrainedWinRate}% win rate</div>
                     <div style="font-size: 12px; color: #888;">${stats.pretrained.wins}/${stats.pretrained.total} wins</div>
                 </div>
                 <div class="result-card">
-                    <div class="result-digit">
+                    <div class="result-digit" style="font-size: 36px;">⚡</div>
+                    <div class="result-confidence">Custom Model</div>
+                    <div class="result-time">${customWinRate}% win rate</div>
+                    <div style="font-size: 12px; color: #888;">${stats.custom.wins}/${stats.custom.total} wins</div>
+                </div>
+            `;
+        }
+
+        function downloadImage() {
+            let dataURL;
+            
+            if (currentInputMethod === 'camera') {
+                const capturedImage = document.getElementById('capturedImage');
+                if (capturedImage.style.display === 'none') {
+                    alert('Please capture a photo first');
+                    return;
+                }
+                dataURL = capturedImage.src;
+            } else {
+                dataURL = canvas.toDataURL();
+            }
+            
+            const link = document.createElement('a');
+            link.download = `digit_${new Date().getTime()}.png`;
+            link.href = dataURL;
+            link.click();
+        }
+
+        function addDemoResults() {
+            const demoResults = [
+                { pretrained: { digit: 7, confidence: 94, time: 85 }, custom: { digit: 7, confidence: 87, time: 150 }, timestamp: new Date(Date.now() - 300000), inputMethod: 'draw' },
+                { pretrained: { digit: 3, confidence: 91, confidence: 92, time: 78 }, custom: { digit: 8, confidence: 82, time: 165 }, timestamp: new Date(Date.now() - 600000), inputMethod: 'camera' },
+                { pretrained: { digit: 9, confidence: 96, time: 92 }, custom: { digit: 9, confidence: 88, time: 140 }, timestamp: new Date(Date.now() - 900000), inputMethod: 'upload' }
+            ];
+            
+            results.push(...demoResults);
+            updateResultsDisplay();
+        }
+
+        // Clock functionality
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('clockText').textContent = timeString;
+        }
+
+        // Location functionality
+        function updateLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        document.getElementById('locationText').textContent = 'Your Location';
+                    },
+                    function(error) {
+                        document.getElementById('locationText').textContent = 'Location unavailable';
+                    }
+                );
+            } else
