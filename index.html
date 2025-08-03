@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Digit Recognition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.2.0/tf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 300% 300%;
+            animation: gradientMove 3s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-input-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .canvas-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 15px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .canvas-wrapper {
+            text-align: center;
+        }
+
+        .canvas-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        #originalCanvas, #processedCanvas {
+            border: 3px solid #e9ecef;
+            border-radius: 10px;
+            max-width: 200px;
+            max-height: 200px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #495057);
+            color: white;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.6);
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .prediction {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .confidence {
+            font-size: 1.2rem;
+            color: #495057;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .info {
+            background: rgba(23, 162, 184, 0.1);
+            color: #17a2b8;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .canvas-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 AI Digit Recognition</h1>
+        <p class="subtitle">Upload a handwritten digit and watch AI identify it instantly!</p>
+        
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="imageInput" class="file-input" accept="image/*">
+                <button class="file-input-button">📷 Choose Image</button>
+            </div>
+        </div>
+
+        <div class="canvas-section">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <div class="canvas-label">Original Image</div>
+                    <canvas id="originalCanvas" width="200" height="200"></canvas>
+                </div>
+                <div class="canvas-wrapper">
+                    <div class="canvas-label">Processed (28x28)</div>
+                    <canvas id="processedCanvas" width="200" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="predictBtn" class="btn btn-primary" disabled>🚀 Predict Digit</button>
+            <button id="clearBtn" class="btn btn-secondary">🗑️ Clear</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your digit...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="prediction" id="prediction">?</div>
+            <div class="confidence" id="confidence">Confidence: --</div>
+        </div>
+
+        <div class="info">
+            <strong>📝 Instructions:</strong><br>
+            1. Upload an image of a handwritten digit (0-9)<br>
+            2. The image will be automatically processed to 28x28 pixels<br>
+            3. Click "Predict Digit" to see the AI's prediction<br>
+            <br>
+            <strong>⚠️ Note:</strong> You'll need to load your trained model first (see console for instructions)
+        </div>
+    </div>
+
+    <script>
+        let model = null;
+        let imageLoaded = false;
+
+        // DOM elements
+        const imageInput = document.getElementById('imageInput');
+        const originalCanvas = document.getElementById('originalCanvas');
+        const processedCanvas = document.getElementById('processedCanvas');
+        const predictBtn = document.getElementById('predictBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+        const prediction = document.getElementById('prediction');
+        const confidence = document.getElementById('confidence');
+
+        const originalCtx = originalCanvas.getContext('2d');
+        const processedCtx = processedCanvas.getContext('2d');
+
+        // Event listeners
+        imageInput.addEventListener('change', handleImageUpload);
+        predictBtn.addEventListener('click', predictDigit);
+        clearBtn.addEventListener('click', clearCanvas);
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    displayOriginalImage(img);
+                    preprocessImage(img);
+                    imageLoaded = true;
+                    predictBtn.disabled = false;
+                    hideError();
+                    hideResults();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function displayOriginalImage(img) {
+            originalCtx.clearRect(0, 0, originalCanvas.width, originalCanvas.height);
+            
+            // Calculate dimensions to fit image in canvas while maintaining aspect ratio
+            const canvasSize = 200;
+            const scale = Math.min(canvasSize / img.width, canvasSize / img.height);
+            const width = img.width * scale;
+            const height = img.height * scale;
+            const x = (canvasSize - width) / 2;
+            const y = (canvasSize - height) / 2;
+            
+            originalCtx.drawImage(img, x, y, width, height);
+        }
+
+        function preprocessImage(img) {
+            // Create a temporary canvas for preprocessing
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = 28;
+            tempCanvas.height = 28;
+
+            // Draw and resize image to 28x28
+            tempCtx.fillStyle = 'white';
+            tempCtx.fillRect(0, 0, 28, 28);
+            tempCtx.drawImage(img, 0, 0, 28, 28);
+
+            // Get image data and convert to grayscale
+            const imageData = tempCtx.getImageData(0, 0, 28, 28);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                data[i] = gray;
+                data[i + 1] = gray;
+                data[i + 2] = gray;
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+
+            // Display processed image scaled up
+            processedCtx.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
+            processedCtx.imageSmoothingEnabled = false;
+            processedCtx.drawImage(tempCanvas, 0, 0, 200, 200);
+        }
+
+        async function predictDigit() {
+            if (!imageLoaded) {
+                showError('Please upload an image first.');
+                return;
+            }
+
+            if (!model) {
+                showError('Model not loaded. Please load your trained model first.');
+                console.log('To load your model, use: model = await tf.loadLayersModel("path/to/your/model.json");');
+                return;
+            }
+
+            showLoading();
+            hideError();
+            hideResults();
+
+            try {
+                // Get the processed image data
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = 28;
+                tempCanvas.height = 28;
+
+                // Recreate the 28x28 processed image
+                tempCtx.drawImage(processedCanvas, 0, 0, 28, 28);
+                const imageData = tempCtx.getImageData(0, 0, 28, 28);
+                const data = imageData.data;
+
+                // Convert to tensor (normalize to 0-1 and reshape)
+                const tensor = tf.tensor4d(Array.from(data).filter((_, i) => i % 4 === 0).map(x => (255 - x) / 255), [1, 28, 28, 1]);
+
+                // Make prediction
+                const predictions = await model.predict(tensor).data();
+                const predictedDigit = predictions.indexOf(Math.max(...predictions));
+                const confidenceScore = Math.max(...predictions);
+
+                // Display results
+                showResults(predictedDigit, confidenceScore);
+
+                // Clean up tensor
+                tensor.dispose();
+            } catch (err) {
+                showError('Error making prediction: ' + err.message);
+                console.error('Prediction error:', err);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function clearCanvas() {
+            originalCtx.clearRect(0, 0, originalCanvas.width, originalCanvas.height);
+            processedCtx.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
+            imageInput.value = '';
+            imageLoaded = false;
+            predictBtn.disabled = true;
+            hideError();
+            hideResults();
+        }
+
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        function hideError() {
+            error.style.display = 'none';
+        }
+
+        function showResults(digit, conf) {
+            prediction.textContent = digit.toString();
+            confidence.textContent = `Confidence: ${(conf * 100).toFixed(1)}%`;
+            results.classList.add('show');
+        }
+
+        function hideResults() {
+            results.classList.remove('show');
+        }
+
+        // Console instructions for loading model
+        console.log(`
+🚀 Welcome to the Digit Recognition App!
+
+To use this app with your trained model, run one of these commands in the console:
+
+1. If you have a model file:
+   model = await tf.loadLayersModel('path/to/your/model.json');
+
+2. If you want to load from a URL:
+   model = await tf.loadLayersModel('https://your-server.com/model.json');
+
+3. If you're testing without a model, you can create a dummy model:
+   model = tf.sequential({
+     layers: [
+       tf.layers.flatten({inputShape: [28, 28, 1]}),
+       tf.layers.dense({units: 10, activation: 'softmax'})
+     ]
+   });
+
+Once your model is loaded, upload an image and click "Predict Digit"!
+        `);
+    </script>
+</body>
+</html>
