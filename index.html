@@ -1,512 +1,1033 @@
-let currentInputMethod = '';
-let cameraStream = null;
-let currentImageData = null;
-let results = [];
-let localModel = null;
-let hfModel = null;
-
-// Initialize application
-async function init() {
-    console.log('Initializing DigitFlix AI...');
-    updateClock();
-    updateLocation();
-    setInterval(updateClock, 1000);
-    
-    // Setup file upload handler
-    document.getElementById('imageUpload').addEventListener('change', handleFileUpload);
-    
-    // Load models
-    await loadModels();
-}
-
-// Update clock display
-function updateClock() {
-    const now = new Date();
-    document.getElementById('clockText').textContent = now.toLocaleTimeString();
-}
-
-// Update location (placeholder - in a real app, use geolocation API)
-function updateLocation() {
-    document.getElementById('locationText').textContent = 'Unknown Location';
-    // Optionally, use navigator.geolocation for real location data
-}
-
-// Load AI models
-async function loadModels() {
-    try {
-        // Load your local model
-        showStatus('Loading your custom MNIST model...', 'info');
-        await loadLocalModel();
-        
-        // Load Hugging Face model
-        showStatus('Loading Hugging Face model...', 'info');
-        await loadHuggingFaceModel();
-        
-        showStatus('Both models loaded successfully! Ready for digit recognition.', 'success');
-        
-    } catch (error) {
-        console.error('Model loading error:', error);
-        showStatus('Models loaded in demo mode. Connect your actual models for real predictions.', 'info');
-        
-        // Set status to ready even in demo mode
-        document.getElementById('localModelStatus').className = 'status-dot ready';
-        document.getElementById('hfModelStatus').className = 'status-dot ready';
-    }
-}
-
-async function loadLocalModel() {
-    try {
-        // For demo purposes, create a simple model structure
-        localModel = tf.sequential({
-            layers: [
-                tf.layers.flatten({ inputShape: [28, 28, 1] }),
-                tf.layers.dense({ units: 128, activation: 'relu' }),
-                tf.layers.dropout({ rate: 0.2 }),
-                tf.layers.dense({ units: 10, activation: 'softmax' })
-            ]
-        });
-        // In a real implementation, load from a repository
-        // localModel = await tf.loadLayersModel('https://raw.githubusercontent.com/AsherKingpin/HandWrittenDigitRecognition/main/model.json');
-        
-        document.getElementById('localModelStatus').className = 'status-dot ready';
-        console.log('Local model loaded successfully');
-        
-    } catch (error) {
-        console.error('Local model loading failed:', error);
-        document.getElementById('localModelStatus').className = 'status-dot error';
-        throw error;
-    }
-}
-
-async function loadHuggingFaceModel() {
-    try {
-        // Demo implementation
-        hfModel = tf.sequential({
-            layers: [
-                tf.layers.flatten({ inputShape: [28, 28, 1] }),
-                tf.layers.dense({ units: 256, activation: 'relu' }),
-                tf.layers.dense({ units: 128, activation: 'relu' }),
-                tf.layers.dense({ units: 10, activation: 'softmax' })
-            ]
-        });
-        // In a real implementation, use Hugging Face's model hub
-        // hfModel = await tf.loadLayersModel('https://huggingface.co/model-endpoint');
-        
-        document.getElementById('hfModelStatus').className = 'status-dot ready';
-        console.log('Hugging Face model loaded successfully');
-        
-    } catch (error) {
-        console.error('Hugging Face model loading failed:', error);
-        document.getElementById('hfModelStatus').className = 'status-dot error';
-        throw error;
-    }
-}
-
-// Input method selection
-function selectInputMethod(method) {
-    currentInputMethod = method;
-    
-    // Update UI
-    document.querySelectorAll('.input-card').forEach(card => {
-        card.classList.remove('active');
-    });
-    
-    document.querySelector(`[onclick="selectInputMethod('${method}')"]`).classList.add('active');
-    
-    // Reset interface
-    resetInterface();
-    
-    if (method === 'upload') {
-        document.getElementById('imageUpload').click();
-    } else if (method === 'camera') {
-        showCameraControls();
-    }
-}
-
-function resetInterface() {
-    // Hide all media elements
-    document.getElementById('cameraVideo').style.display = 'none';
-    document.getElementById('uploadedImage').style.display = 'none';
-    document.getElementById('capturedImage').style.display = 'none';
-    
-    // Hide all controls
-    document.getElementById('startCameraBtn').style.display = 'none';
-    document.getElementById('captureBtn').style.display = 'none';
-    document.getElementById('stopCameraBtn').style.display = 'none';
-    document.getElementById('downloadBtn').style.display = 'none';
-    
-    // Disable recognize button
-    document.getElementById('recognizeBtn').disabled = true;
-    
-    // Hide results
-    document.getElementById('comparisonResults').style.display = 'none';
-    
-    // Stop camera if running
-    if (cameraStream) {
-        stopCamera();
-    }
-    
-    currentImageData = null;
-}
-
-function showCameraControls() {
-    document.getElementById('startCameraBtn').style.display = 'inline-block';
-}
-
-// File upload handling
-function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    if (!file.type.startsWith('image/')) {
-        showStatus('Please select a valid image file.', 'error');
-        return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = document.getElementById('uploadedImage');
-        img.src = e.target.result;
-        img.style.display = 'block';
-        
-        currentImageData = e.target.result;
-        document.getElementById('recognizeBtn').disabled = false;
-        document.getElementById('downloadBtn').style.display = 'inline-block';
-        
-        showStatus('Image uploaded successfully! Click "Analyze" to compare model predictions.', 'success');
-    };
-    
-    reader.readAsDataURL(file);
-}
-
-// Camera functionality
-async function startCamera() {
-    try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: 'environment'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitFlix - MNIST Classifier Comparison</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.10.0/tf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.3));
+            z-index: 100;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e50914;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        .location, .clock {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+        .main-content {
+            margin-top: 80px;
+            padding: 40px;
+        }
+        .hero-section {
+            text-align: center;
+            margin-bottom: 50px;
+            background: linear-gradient(135deg, rgba(229,9,20,0.1), rgba(229,9,20,0.05));
+            padding: 60px;
+            border-radius: 20px;
+            border: 1px solid rgba(229,9,20,0.2);
+        }
+        .hero-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            color: #e50914;
+        }
+        .hero-subtitle {
+            font-size: 18px;
+            color: #b3b3b3;
+            margin-bottom: 20px;
+        }
+        .model-status {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .model-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 25px;
+            border: 1px solid #333;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #666;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.loading {
+            background: #ffa500;
+        }
+        .status-dot.ready {
+            background: #00ff00;
+        }
+        .status-dot.error {
+            background: #ff0000;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .input-section {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 50px 0;
+            flex-wrap: wrap;
+        }
+        .input-card {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #333;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-width: 250px;
+            backdrop-filter: blur(10px);
+        }
+        .input-card:hover {
+            border-color: #e50914;
+            background: rgba(229,9,20,0.1);
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(229,9,20,0.2);
+        }
+        .input-card.active {
+            border-color: #e50914;
+            background: rgba(229,9,20,0.1);
+            box-shadow: 0 20px 40px rgba(229,9,20,0.2);
+        }
+        .input-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .input-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .input-desc {
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+        .media-container {
+            display: flex;
+            justify-content: center;
+            margin: 40px 0;
+        }
+        #cameraVideo {
+            border: 3px solid #e50914;
+            border-radius: 15px;
+            width: 400px;
+            height: 300px;
+            object-fit: cover;
+            display: none;
+            box-shadow: 0 10px 30px rgba(229,9,20,0.3);
+        }
+        #uploadedImage, #capturedImage {
+            border: 3px solid #e50914;
+            border-radius: 15px;
+            max-width: 400px;
+            max-height: 300px;
+            object-fit: contain;
+            display: none;
+            box-shadow: 0 10px 30px rgba(229,9,20,0.3);
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        .control-btn {
+            background: linear-gradient(135deg, #333, #444);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: bold;
+            border: 1px solid #555;
+        }
+        .control-btn:hover {
+            background: linear-gradient(135deg, #555, #666);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .control-btn.primary {
+            background: linear-gradient(45deg, #e50914, #f40612);
+            border: 1px solid #e50914;
+            box-shadow: 0 4px 15px rgba(229,9,20,0.3);
+        }
+        .control-btn.primary:hover {
+            box-shadow: 0 8px 25px rgba(229,9,20,0.4);
+        }
+        .control-btn:disabled {
+            background: #222;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .comparison-results {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 50px 0;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .model-result {
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .model-result.winner {
+            border-color: #e50914;
+            box-shadow: 0 20px 40px rgba(229,9,20,0.3);
+            transform: scale(1.05);
+        }
+        .model-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #e50914;
+        }
+        .result-digit {
+            font-size: 80px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(229,9,20,0.5);
+        }
+        .result-confidence {
+            font-size: 18px;
+            color: #b3b3b3;
+            margin-bottom: 15px;
+        }
+        .result-time {
+            font-size: 14px;
+            color: #666;
+        }
+        .section-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 60px 0 30px 0;
+            color: #ffffff;
+            position: relative;
+            text-align: center;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(45deg, #e50914, #f40612);
+            border-radius: 2px;
+        }
+        .results-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 25px;
+            padding: 30px 0;
+            scrollbar-width: thin;
+            scrollbar-color: #e50914 #333;
+        }
+        .results-container::-webkit-scrollbar {
+            height: 10px;
+        }
+        .results-container::-webkit-scrollbar-track {
+            background: #333;
+            border-radius: 5px;
+        }
+        .results-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #e50914, #f40612);
+            border-radius: 5px;
+        }
+        .result-card {
+            min-width: 250px;
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(229,9,20,0.2), transparent);
+            transition: all 0.8s ease;
+        }
+        .result-card:hover::before {
+            left: 100%;
+        }
+        .result-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            border-color: #e50914;
+            box-shadow: 0 20px 40px rgba(229,9,20,0.3);
+        }
+        .result-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 15px;
+            margin: 0 auto 20px;
+            object-fit: contain;
+            background: white;
+            border: 2px solid #333;
+        }
+        .result-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .model-prediction {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+        .model-name {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .prediction-digit {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e50914;
+        }
+        .prediction-confidence {
+            font-size: 11px;
+            color: #b3b3b3;
+        }
+        .result-time {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .no-results {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 60px;
+            font-size: 16px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: #e50914;
+            margin: 30px 0;
+        }
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #e50914;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-message {
+            text-align: center;
+            padding: 20px;
+            margin: 20px auto;
+            border-radius: 15px;
+            display: none;
+            max-width: 600px;
+        }
+        .status-message.info {
+            background: rgba(0,123,255,0.2);
+            border: 1px solid rgba(0,123,255,0.5);
+            color: #87ceeb;
+        }
+        .status-message.success {
+            background: rgba(40,167,69,0.2);
+            border: 1px solid rgba(40,167,69,0.5);
+            color: #90ee90;
+        }
+        .status-message.error {
+            background: rgba(220,53,69,0.2);
+            border: 1px solid rgba(220,53,69,0.5);
+            color: #ffb3ba;
+        }
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 10px;
             }
-        });
-        
-        const video = document.getElementById('cameraVideo');
-        video.srcObject = cameraStream;
-        video.style.display = 'block';
-        
-        document.getElementById('startCameraBtn').style.display = 'none';
-        document.getElementById('captureBtn').style.display = 'inline-block';
-        document.getElementById('stopCameraBtn').style.display = 'inline-block';
-        
-        showStatus('Camera ready! Position a handwritten digit in view and capture.', 'info');
-        
-    } catch (error) {
-        console.error('Camera error:', error);
-        showStatus('Unable to access camera. Please check permissions.', 'error');
-    }
-}
-
-function capturePhoto() {
-    const video = document.getElementById('cameraVideo');
-    const capturedImage = document.getElementById('capturedImage');
-    
-    // Create canvas to capture frame
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    
-    ctx.drawImage(video, 0, 0);
-    
-    // Show captured image
-    const dataURL = canvas.toDataURL('image/png');
-    capturedImage.src = dataURL;
-    capturedImage.style.display = 'block';
-    
-    currentImageData = dataURL;
-    document.getElementById('recognizeBtn').disabled = false;
-    document.getElementById('downloadBtn').style.display = 'inline-block';
-    
-    // Hide video
-    video.style.display = 'none';
-    stopCamera();
-    
-    showStatus('Photo captured! Click "Analyze" to compare model predictions.', 'success');
-}
-
-function stopCamera() {
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
-    }
-    
-    document.getElementById('startCameraBtn').style.display = 'inline-block';
-    document.getElementById('captureBtn').style.display = 'none';
-    document.getElementById('stopCameraBtn').style.display = 'none';
-}
-
-// Download captured or uploaded image
-function downloadImage() {
-    if (!currentImageData) {
-        showStatus('No image to download.', 'error');
-        return;
-    }
-    
-    const link = document.createElement('a');
-    link.href = currentImageData;
-    link.download = `digit_${new Date().toISOString()}.png`;
-    link.click();
-}
-
-// Recognition function with real model integration
-async function recognizeDigit() {
-    if (!currentImageData) {
-        showStatus('Please upload an image or capture a photo first.', 'error');
-        return;
-    }
-    
-    const loading = document.getElementById('loadingDiv');
-    const resultsDiv = document.getElementById('comparisonResults');
-    
-    loading.style.display = 'block';
-    resultsDiv.style.display = 'none';
-    
-    try {
-        // Preprocess image for models
-        const processedImage = await preprocessImage(currentImageData);
-        
-        // Run both models
-        const localStartTime = performance.now();
-        const localResult = await runLocalModel(processedImage);
-        const localTime = performance.now() - localStartTime;
-        
-        const hfStartTime = performance.now();
-        const hfResult = await runHuggingFaceModel(processedImage);
-        const hfTime = performance.now() - hfStartTime;
-        
-        // Display results
-        displayResults(localResult, hfResult, localTime, hfTime);
-        
-        // Store result
-        storeResult(localResult, hfResult, localTime, hfTime);
-        
-        showStatus('Recognition completed! Check the comparison results below.', 'success');
-        
-    } catch (error) {
-        console.error('Recognition error:', error);
-        showStatus('Recognition completed in demo mode. Connect your models for real predictions.', 'info');
-        
-        // Demo fallback
-        displayDemoResults();
-    }
-    
-    loading.style.display = 'none';
-}
-
-async function preprocessImage(imageData) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = function() {
-            // Create canvas for preprocessing
-            const canvas = document.createElement('canvas');
-            canvas.width = 28;
-            canvas.height = 28;
-            const ctx = canvas.getContext('2d');
-            
-            // Draw and resize to 28x28
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, 28, 28);
-            ctx.drawImage(img, 0, 0, 28, 28);
-            
-            // Get image data and normalize
-            const imageData = ctx.getImageData(0, 0, 28, 28);
-            const tensor = tf.browser.fromPixels(imageData, 1)
-                .expandDims(0)
-                .div(255.0);
-            
-            resolve(tensor);
-        };
-        img.src = imageData;
-    });
-}
-
-async function runLocalModel(preprocessedImage) {
-    try {
-        if (!localModel) {
-            throw new Error('Local model not loaded');
+            .main-content {
+                padding: 20px;
+            }
+            .hero-title {
+                font-size: 32px;
+            }
+            .input-section {
+                flex-direction: column;
+                align-items: center;
+            }
+            .comparison-results {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .model-status {
+                flex-direction: column;
+                gap: 15px;
+            }
         }
-        
-        // Run prediction
-        const prediction = localModel.predict(preprocessedImage);
-        const probabilities = await prediction.data();
-        
-        // Get predicted digit and confidence
-        const maxIndex = probabilities.indexOf(Math.max(...probabilities));
-        const confidence = (probabilities[maxIndex] * 100).toFixed(2);
-        
-        return {
-            digit: maxIndex,
-            confidence: confidence,
-            probabilities: probabilities
-        };
-    } catch (error) {
-        console.error('Local model prediction error:', error);
-        throw error;
-    }
-}
-
-async function runHuggingFaceModel(preprocessedImage) {
-    try {
-        if (!hfModel) {
-            throw new Error('Hugging Face model not loaded');
-        }
-        
-        // Run prediction
-        const prediction = hfModel.predict(preprocessedImage);
-        const probabilities = await prediction.data();
-        
-        // Get predicted digit and confidence
-        const maxIndex = probabilities.indexOf(Math.max(...probabilities));
-        const confidence = (probabilities[maxIndex] * 100).toFixed(2);
-        
-        return {
-            digit: maxIndex,
-            confidence: confidence,
-            probabilities: probabilities
-        };
-    } catch (error) {
-        console.error('Hugging Face model prediction error:', error);
-        throw error;
-    }
-}
-
-function displayResults(localResult, hfResult, localTime, hfTime) {
-    const resultsDiv = document.getElementById('comparisonResults');
-    const localResultDiv = document.getElementById('localResult');
-    const hfResultDiv = document.getElementById('hfResult');
-    
-    // Update local model result
-    document.getElementById('localDigit').textContent = localResult.digit;
-    document.getElementById('localConfidence').textContent = `Confidence: ${localResult.confidence}%`;
-    document.getElementById('localTime').textContent = `Inference Time: ${localTime.toFixed(2)}ms`;
-    
-    // Update Hugging Face model result
-    document.getElementById('hfDigit').textContent = hfResult.digit;
-    document.getElementById('hfConfidence').textContent = `Confidence: ${hfResult.confidence}%`;
-    document.getElementById('hfTime').textContent = `Inference Time: ${hfTime.toFixed(2)}ms`;
-    
-    // Highlight winner (higher confidence)
-    localResultDiv.classList.remove('winner');
-    hfResultDiv.classList.remove('winner');
-    if (parseFloat(localResult.confidence) > parseFloat(hfResult.confidence)) {
-        localResultDiv.classList.add('winner');
-    } else if (parseFloat(hfResult.confidence) > parseFloat(localResult.confidence)) {
-        hfResultDiv.classList.add('winner');
-    }
-    
-    resultsDiv.style.display = 'grid';
-}
-
-function displayDemoResults() {
-    const resultsDiv = document.getElementById('comparisonResults');
-    const localResultDiv = document.getElementById('localResult');
-    const hfResultDiv = document.getElementById('hfResult');
-    
-    // Simulate demo results
-    const demoLocalDigit = Math.floor(Math.random() * 10);
-    const demoHFDigit = Math.floor(Math.random() * 10);
-    const demoLocalConfidence = (Math.random() * 20 + 80).toFixed(2); // 80-100%
-    const demoHFConfidence = (Math.random() * 20 + 80).toFixed(2); // 80-100%
-    const demoLocalTime = (Math.random() * 100 + 50).toFixed(2); // 50-150ms
-    const demoHFTime = (Math.random() * 100 + 50).toFixed(2); // 50-150ms
-    
-    // Update local model result
-    document.getElementById('localDigit').textContent = demoLocalDigit;
-    document.getElementById('localConfidence').textContent = `Confidence: ${demoLocalConfidence}%`;
-    document.getElementById('localTime').textContent = `Inference Time: ${demoLocalTime}ms`;
-    
-    // Update Hugging Face model result
-    document.getElementById('hfDigit').textContent = demoHFDigit;
-    document.getElementById('hfConfidence').textContent = `Confidence: ${demoHFConfidence}%`;
-    document.getElementById('hfTime').textContent = `Inference Time: ${demoHFTime}ms`;
-    
-    // Highlight winner (higher confidence)
-    localResultDiv.classList.remove('winner');
-    hfResultDiv.classList.remove('winner');
-    if (parseFloat(demoLocalConfidence) > parseFloat(demoHFConfidence)) {
-        localResultDiv.classList.add('winner');
-    } else if (parseFloat(demoHFConfidence) > parseFloat(demoLocalConfidence)) {
-        hfResultDiv.classList.add('winner');
-    }
-    
-    resultsDiv.style.display = 'grid';
-    
-    // Store demo result
-    storeResult(
-        { digit: demoLocalDigit, confidence: demoLocalConfidence },
-        { digit: demoHFDigit, confidence: demoHFConfidence },
-        demoLocalTime,
-        demoHFTime
-    );
-}
-
-function storeResult(localResult, hfResult, localTime, hfTime) {
-    results.unshift({
-        image: currentImageData,
-        local: { digit: localResult.digit, confidence: localResult.confidence },
-        hf: { digit: hfResult.digit, confidence: hfResult.confidence },
-        localTime: localTime.toFixed(2),
-        hfTime: hfTime.toFixed(2),
-        timestamp: new Date().toISOString()
-    });
-    
-    updateResultsContainer();
-}
-
-function updateResultsContainer() {
-    const container = document.getElementById('resultsContainer');
-    container.innerHTML = '';
-    
-    if (results.length === 0) {
-        container.innerHTML = '<div class="no-results">Upload or capture your first digit to start building your recognition history!</div>';
-        return;
-    }
-    
-    results.forEach(result => {
-        const card = document.createElement('div');
-        card.className = 'result-card';
-        card.innerHTML = `
-            <img src="${result.image}" class="result-image" alt="Digit">
-            <div class="result-comparison">
-                <div class="model-prediction">
-                    <div class="model-name">Local Model</div>
-                    <div class="prediction-digit">${result.local.digit}</div>
-                    <div class="prediction-confidence">Confidence: ${result.local.confidence}%</div>
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">DigitFlix AI</div>
+        <div class="header-info">
+            <div class="location">
+                <span>📍</span>
+                <span id="locationText">Loading...</span>
+            </div>
+            <div class="clock">
+                <span>🕐</span>
+                <span id="clockText">00:00:00</span>
+            </div>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="hero-section">
+            <h1 class="hero-title">MNIST Classifier Comparison</h1>
+            <p class="hero-subtitle">Compare your custom model with Hugging Face pretrained models</p>
+            <div class="model-status">
+                <div class="model-indicator">
+                    <div class="status-dot loading" id="localModelStatus"></div>
+                    <span>Your Local Model</span>
                 </div>
-                <div class="model-prediction">
-                    <div class="model-name">Hugging Face</div>
-                    <div class="prediction-digit">${result.hf.digit}</div>
-                    <div class="prediction-confidence">Confidence: ${result.hf.confidence}%</div>
+                <div class="model-indicator">
+                    <div class="status-dot loading" id="hfModelStatus"></div>
+                    <span>Hugging Face Model</span>
                 </div>
             </div>
-            <div class="result-time">Local: ${result.localTime}ms | HF: ${result.hfTime}ms</div>
-        `;
-        container.appendChild(card);
-    });
-}
+        </div>
+        <div class="input-section">
+            <div class="input-card" onclick="selectInputMethod('upload')">
+                <span class="input-icon">📁</span>
+                <div class="input-title">Upload Image</div>
+                <div class="input-desc">Select a digit image from your device</div>
+            </div>
+            <div class="input-card" onclick="selectInputMethod('camera')">
+                <span class="input-icon">📷</span>
+                <div class="input-title">Camera Capture</div>
+                <div class="input-desc">Take a photo of a handwritten digit</div>
+            </div>
+        </div>
+        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+        <div class="media-container">
+            <video id="cameraVideo" autoplay playsinline></video>
+            <img id="uploadedImage" alt="Uploaded digit">
+            <img id="capturedImage" alt="Captured digit">
+        </div>
+        <div class="controls">
+            <button class="control-btn" id="startCameraBtn" onclick="startCamera()" style="display: none;">🎥 Start Camera</button>
+            <button class="control-btn" id="captureBtn" onclick="capturePhoto()" style="display: none;">📸 Capture Photo</button>
+            <button class="control-btn" id="stopCameraBtn" onclick="stopCamera()" style="display: none;">⏹️ Stop Camera</button>
+            <button class="control-btn primary" id="recognizeBtn" onclick="recognizeDigit()" disabled>🧠 Analyze with Both Models</button>
+            <button class="control-btn" id="downloadBtn" onclick="downloadImage()" style="display: none;">💾 Download Image</button>
+        </div>
+        <div class="loading" id="loadingDiv">
+            <div class="spinner"></div>
+            <div>Processing with AI models...</div>
+        </div>
+        <div class="status-message" id="statusMessage"></div>
+        <div class="comparison-results" id="comparisonResults">
+            <div class="model-result" id="localResult">
+                <div class="model-title">🏠 Your Local MNIST Model</div>
+                <div class="result-digit" id="localDigit">-</div>
+                <div class="result-confidence" id="localConfidence">Processing...</div>
+                <div class="result-time" id="localTime">-</div>
+            </div>
+            <div class="model-result" id="hfResult">
+                <div class="model-title">🤗 Hugging Face Model</div>
+                <div class="result-digit" id="hfDigit">-</div>
+                <div class="result-confidence" id="hfConfidence">Processing...</div>
+                <div class="result-time" id="hfTime">-</div>
+            </div>
+        </div>
+        <h2 class="section-title">Recognition History</h2>
+        <div class="results-container" id="resultsContainer">
+            <div class="no-results">Upload or capture your first digit to start building your recognition history!</div>
+        </div>
+    </div>
+    <script>
+        let currentInputMethod = '';
+        let cameraStream = null;
+        let currentImageData = null;
+        let results = [];
+        let localModel = null;
+        let hfModel = null;
 
-function showStatus(message, type) {
-    const statusDiv = document.getElementById('statusMessage');
-    statusDiv.textContent = message;
-    statusDiv.className = `status-message ${type}`;
-    statusDiv.style.display = 'block';
-    
-    // Auto-hide after 5 seconds
-    setTimeout(() => {
-        statusDiv.style.display = 'none';
-    }, 5000);
-}
+        // Initialize application
+        async function init() {
+            console.log('Initializing DigitFlix AI...');
+            updateClock();
+            updateLocation();
+            setInterval(updateClock, 1000);
+            
+            // Setup file upload handler
+            document.getElementById('imageUpload').addEventListener('change', handleFileUpload);
+            
+            // Load models
+            await loadModels();
+        }
 
-// Initialize the app when the page loads
-window.onload = init;
+        // Update clock display
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clockText').textContent = now.toLocaleTimeString();
+        }
 
+        // Update location (placeholder - in a real app, use geolocation API)
+        function updateLocation() {
+            document.getElementById('locationText').textContent = 'Unknown Location';
+            // Optionally, use navigator.geolocation for real location data
+        }
+
+        // Load AI models
+        async function loadModels() {
+            try {
+                // Load your local model
+                showStatus('Loading your custom MNIST model...', 'info');
+                await loadLocalModel();
+                
+                // Load Hugging Face model
+                showStatus('Loading Hugging Face model...', 'info');
+                await loadHuggingFaceModel();
+                
+                showStatus('Both models loaded successfully! Ready for digit recognition.', 'success');
+                
+            } catch (error) {
+                console.error('Model loading error:', error);
+                showStatus('Models loaded in demo mode. Connect your actual models for real predictions.', 'info');
+                
+                // Set status to ready even in demo mode
+                document.getElementById('localModelStatus').className = 'status-dot ready';
+                document.getElementById('hfModelStatus').className = 'status-dot ready';
+            }
+        }
+
+        async function loadLocalModel() {
+            try {
+                // For demo purposes, create a simple model structure
+                localModel = tf.sequential({
+                    layers: [
+                        tf.layers.flatten({ inputShape: [28, 28, 1] }),
+                        tf.layers.dense({ units: 128, activation: 'relu' }),
+                        tf.layers.dropout({ rate: 0.2 }),
+                        tf.layers.dense({ units: 10, activation: 'softmax' })
+                    ]
+                });
+                // In a real implementation, load from a repository
+                // localModel = await tf.loadLayersModel('https://raw.githubusercontent.com/AsherKingpin/HandWrittenDigitRecognition/main/model.json');
+                
+                document.getElementById('localModelStatus').className = 'status-dot ready';
+                console.log('Local model loaded successfully');
+                
+            } catch (error) {
+                console.error('Local model loading failed:', error);
+                document.getElementById('localModelStatus').className = 'status-dot error';
+                throw error;
+            }
+        }
+
+        async function loadHuggingFaceModel() {
+            try {
+                // Demo implementation
+                hfModel = tf.sequential({
+                    layers: [
+                        tf.layers.flatten({ inputShape: [28, 28, 1] }),
+                        tf.layers.dense({ units: 256, activation: 'relu' }),
+                        tf.layers.dense({ units: 128, activation: 'relu' }),
+                        tf.layers.dense({ units: 10, activation: 'softmax' })
+                    ]
+                });
+                // In a real implementation, use Hugging Face's model hub
+                // hfModel = await tf.loadLayersModel('https://huggingface.co/model-endpoint');
+                
+                document.getElementById('hfModelStatus').className = 'status-dot ready';
+                console.log('Hugging Face model loaded successfully');
+                
+            } catch (error) {
+                console.error('Hugging Face model loading failed:', error);
+                document.getElementById('hfModelStatus').className = 'status-dot error';
+                throw error;
+            }
+        }
+
+        // Input method selection
+        function selectInputMethod(method) {
+            currentInputMethod = method;
+            
+            // Update UI
+            document.querySelectorAll('.input-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            document.querySelector(`[onclick="selectInputMethod('${method}')"]`).classList.add('active');
+            
+            // Reset interface
+            resetInterface();
+            
+            if (method === 'upload') {
+                document.getElementById('imageUpload').click();
+            } else if (method === 'camera') {
+                showCameraControls();
+            }
+        }
+
+        function resetInterface() {
+            // Hide all media elements
+            document.getElementById('cameraVideo').style.display = 'none';
+            document.getElementById('uploadedImage').style.display = 'none';
+            document.getElementById('capturedImage').style.display = 'none';
+            
+            // Hide all controls
+            document.getElementById('startCameraBtn').style.display = 'none';
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('stopCameraBtn').style.display = 'none';
+            document.getElementById('downloadBtn').style.display = 'none';
+            
+            // Disable recognize button
+            document.getElementById('recognizeBtn').disabled = true;
+            
+            // Hide results
+            document.getElementById('comparisonResults').style.display = 'none';
+            
+            // Stop camera if running
+            if (cameraStream) {
+                stopCamera();
+            }
+            
+            currentImageData = null;
+        }
+
+        function showCameraControls() {
+            document.getElementById('startCameraBtn').style.display = 'inline-block';
+        }
+
+        // File upload handling
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showStatus('Please select a valid image file.', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('uploadedImage');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                
+                currentImageData = e.target.result;
+                document.getElementById('recognizeBtn').disabled = false;
+                document.getElementById('downloadBtn').style.display = 'inline-block';
+                
+                showStatus('Image uploaded successfully! Click "Analyze" to compare model predictions.', 'success');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Camera functionality
+        async function startCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'environment'
+                    }
+                });
+                
+                const video = document.getElementById('cameraVideo');
+                video.srcObject = cameraStream;
+                video.style.display = 'block';
+                
+                document.getElementById('startCameraBtn').style.display = 'none';
+                document.getElementById('captureBtn').style.display = 'inline-block';
+                document.getElementById('stopCameraBtn').style.display = 'inline-block';
+                
+                showStatus('Camera ready! Position a handwritten digit in view and capture.', 'info');
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                showStatus('Unable to access camera. Please check permissions.', 'error');
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const capturedImage = document.getElementById('capturedImage');
+            
+            // Create canvas to capture frame
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.drawImage(video, 0, 0);
+            
+            // Show captured image
+            const dataURL = canvas.toDataURL('image/png');
+            capturedImage.src = dataURL;
+            capturedImage.style.display = 'block';
+            
+            currentImageData = dataURL;
+            document.getElementById('recognizeBtn').disabled = false;
+            document.getElementById('downloadBtn').style.display = 'inline-block';
+            
+            // Hide video
+            video.style.display = 'none';
+            stopCamera();
+            
+            showStatus('Photo captured! Click "Analyze" to compare model predictions.', 'success');
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            document.getElementById('startCameraBtn').style.display = 'inline-block';
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('stopCameraBtn').style.display = 'none';
+        }
+
+        // Download captured or uploaded image
+        function downloadImage() {
+            if (!currentImageData) {
+                showStatus('No image to download.', 'error');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.href = currentImageData;
+            link.download = `digit_${new Date().toISOString()}.png`;
+            link.click();
+        }
+
+        // Recognition function with real model integration
+        async function recognizeDigit() {
+            if (!currentImageData) {
+                showStatus('Please upload an image or capture a photo first.', 'error');
+                return;
+            }
+            
+            const loading = document.getElementById('loadingDiv');
+            const resultsDiv = document.getElementById('comparisonResults');
+            
+            loading.style.display = 'block';
+            resultsDiv.style.display = 'none';
+            
+            try {
+                // Preprocess image for models
+                const processedImage = await preprocessImage(currentImageData);
+                
+                // Run both models
+                const localStartTime = performance.now();
+                const localResult = await runLocalModel(processedImage);
+                const localTime = performance.now() - localStartTime;
+                
+                const hfStartTime = performance.now();
+                const hfResult = await runHuggingFaceModel(processedImage);
+                const hfTime = performance.now() - hfStartTime;
+                
+                // Display results
+                displayResults(localResult, hfResult, localTime, hfTime);
+                
+                // Store result
+                storeResult(localResult, hfResult, localTime, hfTime);
+                
+                showStatus('Recognition completed! Check the comparison results below.', 'success');
+                
+            } catch (error) {
+                console.error('Recognition error:', error);
+                showStatus('Recognition completed in demo mode. Connect your models for real predictions.', 'info');
+                
+                // Demo fallback
+                displayDemoResults();
+            }
+            
+            loading.style.display = 'none';
+        }
+
+        async function preprocessImage(imageData) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    // Create canvas for preprocessing
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 28;
+                    canvas.height = 28;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Draw and resize to 28x28
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, 28, 28);
+                    ctx.drawImage(img, 0, 0, 28, 28);
+                    
+                    // Get image data and normalize
+                    const imageData = ctx.getImageData(0, 0, 28, 28);
+                    const tensor = tf.browser.fromPixels(imageData, 1)
+                        .expandDims(0)
+                        .div(255.0);
+                    
+                    resolve(tensor);
+                };
+                img.src = imageData;
+            });
+        }
+
+        async function runLocalModel(preprocessedImage) {
+            try {
+                if (!localModel) {
+                    throw new Error('Local model not loaded');
+                }
+                
+                // Run prediction
+                const prediction = localModel.predict(preprocessedImage);
+                const probabilities = await prediction.data();
+                
+                // Get predicted digit and confidence
+                const maxIndex = probabilities.indexOf(Math.max(...probabilities));
+                const confidence = (probabilities[maxIndex] * 100).toFixed(2);
+                
+                return {
+                    digit: maxIndex,
+                    confidence: confidence,
+                    probabilities: probabilities
+                };
+            } catch (error) {
+                console.error('Local model prediction error:', error);
+                throw error;
+            }
+        }
+
+        async function runHuggingFaceModel(preprocessedImage) {
+            try {
+                if (!hfModel) {
+                    throw new Error('Hugging Face model not loaded');
+                }
+                
+                // Run prediction
+                const prediction = hfModel.predict(preprocessedImage);
+                const probabilities = await prediction.data();
+                
+                // Get predicted digit and confidence
+                const maxIndex = probabilities.indexOf(Math.max(...probabilities));
+                const confidence = (probabilities[maxIndex] * 100).toFixed(2);
+                
+                return {
+                    digit: maxIndex,
+                    confidence: confidence,
+                    probabilities: probabilities
+                };
+            } catch (error) {
+                console.error('Hugging Face model prediction error:', error);
+                throw error;
+            }
+        }
+
+        function displayResults(localResult, hfResult, localTime, hfTime) {
+            const resultsDiv = document.getElementById('comparisonResults');
+            const localResultDiv = document.getElementById('localResult');
+            const hfResultDiv = document.getElementById('hfResult');
+            
+            // Update local model result
+            document.getElementById('localDigit').textContent = localResult.digit;
+            document.getElementById('localConfidence').textContent = `Confidence: ${localResult.confidence}%`;
+            document.getElementById('localTime').textContent = `Inference Time: ${localTime.toFixed(2)}ms`;
+            
+            // Update Hugging Face model result
+            document.getElementById('hfDigit').textContent = hfResult.digit;
+            document.getElementById('hfConfidence').textContent = `Confidence: ${hfResult.confidence}%`;
+            document.getElementById('hfTime').textContent = `Inference Time: ${hfTime.toFixed(2)}ms`;
+            
+            // Highlight winner (higher confidence)
+            localResultDiv.classList.remove('winner');
+            hfResultDiv.classList.remove('winner');
+            if (parseFloat(localResult.confidence) > parseFloat(hfResult.confidence)) {
+                localResultDiv.classList.add('winner');
+            } else if (parseFloat(hfResult.confidence) > parseFloat(localResult.confidence)) {
+                hfResultDiv.classList.add('winner');
+            }
+            
+            resultsDiv.style.display = 'grid';
+        }
+
+        function displayDemoResults() {
+            const resultsDiv = document.getElementById('comparisonResults');
+            const localResultDiv = document.getElementById('localResult');
+            const hfResultDiv = document.getElementById('hfResult');
+            
+            // Simulate demo results
+            const demoLocalDigit = Math.floor(Math.random() * 10);
+            const demoHFDigit = Math.floor(Math.random() * 10);
+            const demoLocalConfidence = (Math.random() * 20 + 80).toFixed(2); // 80-100%
+            const demoHFConfidence = (Math.random() * 20 + 80).toFixed(2); // 80-100%
+            const demoLocalTime = (Math.random() * 100 + 50).toFixed(2); // 50-150ms
+            const demoHFTime = (Math.random() * 100 + 50).toFixed(2); // 50-150ms
+            
+            // Update local model result
+            document.getElementById('localDigit').textContent = demoLocalDigit;
+            document.getElementById('localConfidence').textContent = `Confidence: ${demoLocalConfidence}%`;
+            document.getElementById('localTime').textContent = `Inference Time: ${demoLocalTime}ms`;
+            
+            // Update Hugging Face model result
+            document.getElementById('hfDigit').textContent = demoHFDigit;
+            document.getElementById('hfConfidence').textContent = `Confidence: ${demoHFConfidence}%`;
+            document.getElementById('hfTime').textContent = `Inference Time: ${demoHFTime}ms`;
+            
+            // Highlight winner (higher confidence)
+            localResultDiv.classList.remove('winner');
+            hfResultDiv.classList.remove('winner');
+            if (parseFloat(demoLocalConfidence) > parseFloat(demoHFConfidence)) {
+                localResultDiv.classList.add('winner');
+            } else if (parseFloat(demoHFConfidence) > parseFloat(demoLocalConfidence)) {
+                hfResultDiv.classList.add('winner');
+            }
+            
+            resultsDiv.style.display = 'grid';
+            
+            // Store demo result
+            storeResult(
+                { digit: demoLocalDigit, confidence: demoLocalConfidence },
+                { digit: demoHFDigit, confidence: demoHFConfidence },
+                demoLocalTime,
+                demoHFTime
+            );
+        }
+
+        function storeResult(localResult, hfResult, localTime, hfTime) {
+            results.unshift({
+                image: currentImageData,
+                local: { digit: localResult.digit, confidence: localResult.confidence },
+                hf: { digit: hfResult.digit, confidence: hfResult.confidence },
+                localTime: localTime.toFixed(2),
+                hfTime: hfTime.toFixed(2),
+                timestamp: new Date().toISOString()
+            });
+            
+            updateResultsContainer();
+        }
+
+        function updateResultsContainer() {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+            
+            if (results.length === 0) {
+                container.innerHTML = '<div class="no-results">Upload or capture your first digit to start building your recognition history!</div>';
+                return;
+            }
+            
+            results.forEach(result => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.innerHTML = `
+                    <img src="${result.image}" class="result-image" alt="Digit">
+                    <div class="result-comparison">
+                        <div class="model-prediction">
+                            <div class="model-name">Local Model</div>
+                            <div class="prediction-digit">${result.local.digit}</div>
+                            <div class="prediction-confidence">Confidence: ${result.local.confidence}%</div>
+                        </div>
+                        <div class="model-prediction">
+                            <div class="model-name">Hugging Face</div>
+                            <div class="prediction-digit">${result.hf.digit}</div>
+                            <div class="prediction-confidence">Confidence: ${result.hf.confidence}%</div>
+                        </div>
+                    </div>
+                    <div class="result-time">Local: ${result.localTime}ms | HF: ${result.hfTime}ms</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message ${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Initialize the app when the page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
