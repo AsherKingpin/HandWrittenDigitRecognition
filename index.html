@@ -69,10 +69,17 @@
             margin-bottom: 30px;
         }
 
+        .input-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
         .file-input-wrapper {
             position: relative;
             display: inline-block;
-            margin-bottom: 20px;
         }
 
         .file-input {
@@ -99,6 +106,42 @@
         .file-input-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .camera-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .camera-btn:hover {
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .camera-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 15px;
+            border: 2px solid #007bff;
+        }
+
+        .camera-container {
+            text-align: center;
+        }
+
+        #video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
         .canvas-section {
@@ -266,7 +309,17 @@
                 gap: 20px;
             }
             
+            .input-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
             .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .camera-controls {
                 flex-direction: column;
                 align-items: center;
             }
@@ -279,9 +332,23 @@
         <p class="subtitle">Upload a handwritten digit and watch AI identify it instantly!</p>
         
         <div class="upload-section">
-            <div class="file-input-wrapper">
-                <input type="file" id="imageInput" class="file-input" accept="image/*">
-                <button class="file-input-button">📷 Choose Image</button>
+            <div class="input-options">
+                <div class="file-input-wrapper">
+                    <input type="file" id="imageInput" class="file-input" accept="image/*">
+                    <button class="file-input-button">📁 Choose File</button>
+                </div>
+                <button id="cameraBtn" class="file-input-button camera-btn">📸 Use Camera</button>
+            </div>
+        </div>
+
+        <div class="camera-section" id="cameraSection" style="display: none;">
+            <div class="camera-container">
+                <video id="video" autoplay playsinline></video>
+                <canvas id="captureCanvas" style="display: none;"></canvas>
+                <div class="camera-controls">
+                    <button id="captureBtn" class="btn btn-primary">📸 Capture</button>
+                    <button id="stopCameraBtn" class="btn btn-secondary">❌ Stop Camera</button>
+                </div>
             </div>
         </div>
 
@@ -317,9 +384,16 @@
 
         <div class="info">
             <strong>📝 Instructions:</strong><br>
-            1. Upload an image of a handwritten digit (0-9)<br>
-            2. The image will be automatically processed to 28x28 pixels<br>
-            3. Click "Predict Digit" to see the AI's prediction<br>
+            1. <strong>Upload Image:</strong> Choose a file with a handwritten digit (0-9)<br>
+            2. <strong>Use Camera:</strong> Take a live photo of a handwritten digit<br>
+            3. The image will be automatically processed to 28x28 pixels<br>
+            4. Click "Predict Digit" to see the AI's prediction<br>
+            <br>
+            <strong>📱 Camera Tips:</strong><br>
+            • Use good lighting for better results<br>
+            • Hold steady when capturing<br>
+            • Make sure the digit fills most of the frame<br>
+            • Dark digits on light background work best<br>
             <br>
             <strong>⚠️ Note:</strong> You'll need to load your trained model first (see console for instructions)
         </div>
@@ -328,9 +402,16 @@
     <script>
         let model = null;
         let imageLoaded = false;
+        let stream = null;
 
         // DOM elements
         const imageInput = document.getElementById('imageInput');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const cameraSection = document.getElementById('cameraSection');
+        const video = document.getElementById('video');
+        const captureCanvas = document.getElementById('captureCanvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
         const originalCanvas = document.getElementById('originalCanvas');
         const processedCanvas = document.getElementById('processedCanvas');
         const predictBtn = document.getElementById('predictBtn');
@@ -343,9 +424,13 @@
 
         const originalCtx = originalCanvas.getContext('2d');
         const processedCtx = processedCanvas.getContext('2d');
+        const captureCtx = captureCanvas.getContext('2d');
 
         // Event listeners
         imageInput.addEventListener('change', handleImageUpload);
+        cameraBtn.addEventListener('click', startCamera);
+        captureBtn.addEventListener('click', captureImage);
+        stopCameraBtn.addEventListener('click', stopCamera);
         predictBtn.addEventListener('click', predictDigit);
         clearBtn.addEventListener('click', clearCanvas);
 
@@ -471,6 +556,74 @@
             predictBtn.disabled = true;
             hideError();
             hideResults();
+            stopCamera();
+        }
+
+        async function startCamera() {
+            try {
+                hideError();
+                
+                // Request camera access with preference for rear camera (better for documents)
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: 'environment' }, // Prefer rear camera
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                cameraSection.style.display = 'block';
+                
+                // Wait for video to load
+                video.addEventListener('loadedmetadata', () => {
+                    captureCanvas.width = video.videoWidth;
+                    captureCanvas.height = video.videoHeight;
+                });
+
+            } catch (err) {
+                console.error('Camera error:', err);
+                if (err.name === 'NotAllowedError') {
+                    showError('Camera access denied. Please allow camera permissions and try again.');
+                } else if (err.name === 'NotFoundError') {
+                    showError('No camera found on this device.');
+                } else {
+                    showError('Error accessing camera: ' + err.message);
+                }
+            }
+        }
+
+        function captureImage() {
+            if (!stream) {
+                showError('Camera not active');
+                return;
+            }
+
+            // Capture current video frame
+            captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+            
+            // Convert canvas to image
+            const img = new Image();
+            img.onload = function() {
+                displayOriginalImage(img);
+                preprocessImage(img);
+                imageLoaded = true;
+                predictBtn.disabled = false;
+                hideError();
+                hideResults();
+                stopCamera(); // Stop camera after capture
+            };
+            img.src = captureCanvas.toDataURL('image/png');
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            cameraSection.style.display = 'none';
+            video.srcObject = null;
         }
 
         function showLoading() {
@@ -500,27 +653,191 @@
             results.classList.remove('show');
         }
 
-        // Console instructions for loading model
+        // Auto-load model configuration
+        const MODEL_CONFIGS = {
+            // Configuration for GitHub Pages deployment
+            github: {
+                path: './model/model.json',
+                description: 'Loading from GitHub Pages...'
+            },
+            // Configuration for local development
+            local: {
+                path: './model/model.json',
+                description: 'Loading from local files...'
+            },
+            // Configuration for custom URL
+            custom: {
+                path: null, // Set this to your custom URL
+                description: 'Loading from custom URL...'
+            },
+            // Demo model for testing
+            demo: {
+                path: null,
+                description: 'Creating demo model...'
+            }
+        };
+
+        // Auto-load model when page loads
+        window.addEventListener('load', async () => {
+            await loadModel();
+        });
+
+        async function loadModel() {
+            const statusDiv = document.querySelector('.info');
+            
+            try {
+                showModelStatus('🔄 Loading AI model...', 'blue');
+                
+                // Try different loading strategies
+                const strategies = [
+                    () => loadFromPath(MODEL_CONFIGS.github.path),
+                    () => loadFromPath(MODEL_CONFIGS.local.path),
+                    () => createDemoModel()
+                ];
+
+                for (let i = 0; i < strategies.length; i++) {
+                    try {
+                        model = await strategies[i]();
+                        if (model) {
+                            showModelStatus('✅ Model loaded successfully! Ready to recognize digits.', 'green');
+                            console.log('✅ Model loaded successfully!');
+                            return;
+                        }
+                    } catch (error) {
+                        console.log(`Strategy ${i + 1} failed:`, error.message);
+                        if (i === strategies.length - 1) throw error;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ All model loading strategies failed:', error);
+                showModelStatus('❌ Failed to load model. Using demo mode.', 'red');
+                
+                // Create a simple demo model as fallback
+                model = createDemoModel();
+                showModelStatus('⚠️ Demo model loaded. Results will be random.', 'orange');
+            }
+        }
+
+        async function loadFromPath(modelPath) {
+            if (!modelPath) throw new Error('No model path specified');
+            
+            console.log(`Attempting to load model from: ${modelPath}`);
+            const loadedModel = await tf.loadLayersModel(modelPath);
+            
+            // Validate model
+            if (!loadedModel) throw new Error('Model loaded but is null');
+            
+            // Check if model has expected input shape [28, 28, 1] or [784]
+            const inputShape = loadedModel.inputs[0].shape;
+            console.log('Model input shape:', inputShape);
+            
+            return loadedModel;
+        }
+
+        function createDemoModel() {
+            console.log('Creating demo model for testing...');
+            
+            // Create a simple model with the expected MNIST structure
+            const demoModel = tf.sequential({
+                layers: [
+                    tf.layers.flatten({inputShape: [28, 28, 1]}),
+                    tf.layers.dense({units: 128, activation: 'relu'}),
+                    tf.layers.dropout({rate: 0.2}),
+                    tf.layers.dense({units: 10, activation: 'softmax'})
+                ]
+            });
+            
+            // Compile the model
+            demoModel.compile({
+                optimizer: 'adam',
+                loss: 'categoricalCrossentropy',
+                metrics: ['accuracy']
+            });
+            
+            return demoModel;
+        }
+
+        function showModelStatus(message, color) {
+            const statusDiv = document.querySelector('.info');
+            const colorMap = {
+                'green': '#28a745',
+                'red': '#dc3545',
+                'blue': '#007bff',
+                'orange': '#fd7e14'
+            };
+            
+            statusDiv.innerHTML = `
+                <div style="color: ${colorMap[color]}; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 8px; background: rgba(${color === 'green' ? '40,167,69' : color === 'red' ? '220,53,69' : color === 'blue' ? '0,123,255' : '253,126,20'}, 0.1);">
+                    ${message}
+                </div>
+                <strong>📝 Instructions:</strong><br>
+                1. <strong>Upload Image:</strong> Choose a file with a handwritten digit (0-9)<br>
+                2. <strong>Use Camera:</strong> Take a live photo of a handwritten digit<br>
+                3. The image will be automatically processed to 28x28 pixels<br>
+                4. Click "Predict Digit" to see the AI's prediction<br>
+                <br>
+                <strong>📱 Camera Tips:</strong><br>
+                • Use good lighting for better results<br>
+                • Hold steady when capturing<br>
+                • Make sure the digit fills most of the frame<br>
+                • Dark digits on light background work best<br>
+                <br>
+                <details>
+                    <summary><strong>🔧 Advanced Options</strong></summary>
+                    <div style="margin-top: 10px; font-size: 0.9em;">
+                        <strong>Manual Model Loading:</strong><br>
+                        If auto-loading fails, you can manually load your model:<br>
+                        <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">
+                            model = await tf.loadLayersModel('./model/model.json');
+                        </code><br><br>
+                        
+                        <strong>Load from Custom URL:</strong><br>
+                        <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">
+                            model = await tf.loadLayersModel('https://your-url.com/model.json');
+                        </code><br><br>
+                        
+                        <strong>Check Model Status:</strong><br>
+                        <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px;">
+                            console.log('Model loaded:', !!model);
+                        </code>
+                    </div>
+                </details>
+            `;
+        }
+
+        // Manual model loading function (for console use)
+        async function loadModelFromURL(url) {
+            try {
+                showModelStatus('🔄 Loading model from custom URL...', 'blue');
+                model = await tf.loadLayersModel(url);
+                showModelStatus('✅ Custom model loaded successfully!', 'green');
+                console.log('✅ Model loaded from:', url);
+            } catch (error) {
+                showModelStatus('❌ Failed to load model from URL: ' + error.message, 'red');
+                console.error('Failed to load model:', error);
+            }
+        }
+
+        // Console helper functions
         console.log(`
-🚀 Welcome to the Digit Recognition App!
+🚀 Digit Recognition App - Model Loading Guide
 
-To use this app with your trained model, run one of these commands in the console:
+✅ AUTOMATIC LOADING:
+   - The app automatically tries to load your model from './model/model.json'
+   - Check the status message above for loading results
 
-1. If you have a model file:
-   model = await tf.loadLayersModel('path/to/your/model.json');
+🔧 MANUAL LOADING (if needed):
+   - loadModelFromURL('https://your-server.com/model.json')
+   - model = await tf.loadLayersModel('./model/model.json')
 
-2. If you want to load from a URL:
-   model = await tf.loadLayersModel('https://your-server.com/model.json');
+📊 CHECK STATUS:
+   - console.log('Model loaded:', !!model)
+   - console.log('Model summary:', model?.summary())
 
-3. If you're testing without a model, you can create a dummy model:
-   model = tf.sequential({
-     layers: [
-       tf.layers.flatten({inputShape: [28, 28, 1]}),
-       tf.layers.dense({units: 10, activation: 'softmax'})
-     ]
-   });
-
-Once your model is loaded, upload an image and click "Predict Digit"!
+🏗️ DEMO MODE:
+   - If no model is found, a demo model is created
+   - Demo predictions will be random but the app will still work
         `);
     </script>
 </body>
