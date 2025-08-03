@@ -813,9 +813,9 @@
                 
             } catch (error) {
                 console.error('Recognition error:', error);
-                showStatus('Recognition completed in demo mode. Connect your models for real predictions.', 'info');
+                showStatus('Recognition failed: Models unavailable. Please try again later.', 'error');
                 
-                // Demo fallback
+                // Display failure message
                 displayDemoResults();
             }
             
@@ -931,42 +931,24 @@
             const localResultDiv = document.getElementById('localResult');
             const hfResultDiv = document.getElementById('hfResult');
             
-            // Simulate demo results
-            const demoLocalDigit = Math.floor(Math.random() * 10);
-            const demoHFDigit = Math.floor(Math.random() * 10);
-            const demoLocalConfidence = (Math.random() * 20 + 80).toFixed(2); // 80-100%
-            const demoHFConfidence = (Math.random() * 20 + 80).toFixed(2); // 80-100%
-            const demoLocalTime = (Math.random() * 100 + 50).toFixed(2); // 50-150ms
-            const demoHFTime = (Math.random() * 100 + 50).toFixed(2); // 50-150ms
+            // Reset result fields
+            document.getElementById('localDigit').textContent = '-';
+            document.getElementById('localConfidence').textContent = 'Model failed to load';
+            document.getElementById('localTime').textContent = '-';
             
-            // Update local model result
-            document.getElementById('localDigit').textContent = demoLocalDigit;
-            document.getElementById('localConfidence').textContent = `Confidence: ${demoLocalConfidence}%`;
-            document.getElementById('localTime').textContent = `Inference Time: ${demoLocalTime}ms`;
+            document.getElementById('hfDigit').textContent = '-';
+            document.getElementById('hfConfidence').textContent = 'Model failed to load';
+            document.getElementById('hfTime').textContent = '-';
             
-            // Update Hugging Face model result
-            document.getElementById('hfDigit').textContent = demoHFDigit;
-            document.getElementById('hfConfidence').textContent = `Confidence: ${demoHFConfidence}%`;
-            document.getElementById('hfTime').textContent = `Inference Time: ${demoHFTime}ms`;
-            
-            // Highlight winner (higher confidence)
+            // Remove winner styling
             localResultDiv.classList.remove('winner');
             hfResultDiv.classList.remove('winner');
-            if (parseFloat(demoLocalConfidence) > parseFloat(demoHFConfidence)) {
-                localResultDiv.classList.add('winner');
-            } else if (parseFloat(demoHFConfidence) > parseFloat(demoLocalConfidence)) {
-                hfResultDiv.classList.add('winner');
-            }
             
+            // Show the results section
             resultsDiv.style.display = 'grid';
             
-            // Store demo result
-            storeResult(
-                { digit: demoLocalDigit, confidence: demoLocalConfidence },
-                { digit: demoHFDigit, confidence: demoHFConfidence },
-                demoLocalTime,
-                demoHFTime
-            );
+            // Optional: Show a status message for clarity
+            showStatus('Unable to process image: Models failed to load. Please try again later.', 'error');
         }
 
         function storeResult(localResult, hfResult, localTime, hfTime) {
