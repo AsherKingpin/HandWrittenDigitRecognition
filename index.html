@@ -576,7 +576,8 @@
         async function loadLocalModel() {
             try {
                 
-                localModel = await tf.loadLayersModel('https://raw.githubusercontent.com/AsherKingpin/HandWrittenDigitRecognition/main/model.json');
+                localModel = await tf.loadLayersModel('https://asherkingpin.github.io/HandWrittenDigitRecognition/model/model.json');
+
                 
                 document.getElementById('localModelStatus').className = 'status-dot ready';
                 console.log('Local model loaded successfully');
