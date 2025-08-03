@@ -589,20 +589,16 @@
             }
         }
 
-        async function loadHuggingFaceModel() {
-            try {
-                
-                hfModel = await tf.loadLayersModel('https://huggingface.co/model-endpoint');
-                
-                document.getElementById('hfModelStatus').className = 'status-dot ready';
-                console.log('Hugging Face model loaded successfully');
-                
-            } catch (error) {
-                console.error('Hugging Face model loading failed:', error);
-                document.getElementById('hfModelStatus').className = 'status-dot error';
-                throw error;
-            }
+     async function loadHuggingFaceModel() {
+        try {
+            hfModel = await tf.loadLayersModel('https://huggingface.co/E7h4nHunt/MNIST_CNN/resolve/main/model.json');
+            document.getElementById('hfModelStatus').className = 'status-dot success';
+        } catch (error) {
+            console.error('Failed to load Hugging Face model:', error);
+            document.getElementById('hfModelStatus').className = 'status-dot error';
         }
+    }
+
 
         // Input method selection
         function selectInputMethod(method) {
