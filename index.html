@@ -476,10 +476,7 @@
             <div class="no-results">No previous results yet. Try drawing, capturing, or uploading a digit!</div>
         </div>
 
-        <h2 class="section-title">Model Comparison Stats</h2>
-        <div class="results-container" id="statsContainer">
-            <div class="no-results">Statistics will appear after multiple recognitions</div>
-        </div>
+
     </div>
 
     <script>
@@ -793,29 +790,7 @@
             }).join('');
         }
 
-        function updateStats() {
-            const container = document.getElementById('statsContainer');
-            
-            if (stats.pretrained.total === 0) return;
-            
-            const pretrainedWinRate = Math.round((stats.pretrained.wins / stats.pretrained.total) * 100);
-            const customWinRate = Math.round((stats.custom.wins / stats.custom.total) * 100);
-            
-            container.innerHTML = `
-                <div class="result-card">
-                    <div class="result-digit" style="font-size: 36px;">🤖</div>
-                    <div class="result-confidence">Pretrained Model</div>
-                    <div class="result-time">${pretrainedWinRate}% win rate</div>
-                    <div style="font-size: 12px; color: #888;">${stats.pretrained.wins}/${stats.pretrained.total} wins</div>
-                </div>
-                <div class="result-card">
-                    <div class="result-digit" style="font-size: 36px;">⚡</div>
-                    <div class="result-confidence">Custom Model</div>
-                    <div class="result-time">${customWinRate}% win rate</div>
-                    <div style="font-size: 12px; color: #888;">${stats.custom.wins}/${stats.custom.total} wins</div>
-                </div>
-            `;
-        }
+
 
         function downloadImage() {
             let dataURL;
@@ -840,7 +815,7 @@
         function addDemoResults() {
             const demoResults = [
                 { pretrained: { digit: 7, confidence: 94, time: 85 }, custom: { digit: 7, confidence: 87, time: 150 }, timestamp: new Date(Date.now() - 300000), inputMethod: 'draw' },
-                { pretrained: { digit: 3, confidence: 91, confidence: 92, time: 78 }, custom: { digit: 8, confidence: 82, time: 165 }, timestamp: new Date(Date.now() - 600000), inputMethod: 'camera' },
+                { pretrained: { digit: 3, confidence: 92, time: 78 }, custom: { digit: 8, confidence: 82, time: 165 }, timestamp: new Date(Date.now() - 600000), inputMethod: 'camera' },
                 { pretrained: { digit: 9, confidence: 96, time: 92 }, custom: { digit: 9, confidence: 88, time: 140 }, timestamp: new Date(Date.now() - 900000), inputMethod: 'upload' }
             ];
             
@@ -866,4 +841,13 @@
                         document.getElementById('locationText').textContent = 'Location unavailable';
                     }
                 );
-            } else
+            } else {
+                document.getElementById('locationText').textContent = 'Geolocation not supported';
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
