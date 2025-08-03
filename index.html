@@ -11,14 +11,12 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
             color: #ffffff;
             font-family: 'Arial', sans-serif;
             overflow-x: hidden;
         }
-
         .header {
             position: fixed;
             top: 0;
@@ -30,20 +28,17 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .logo {
             font-size: 28px;
             font-weight: bold;
             color: #e50914;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
-
         .header-info {
             display: flex;
             align-items: center;
             gap: 30px;
         }
-
         .location, .clock {
             display: flex;
             align-items: center;
@@ -51,14 +46,12 @@
             font-size: 14px;
             color: #b3b3b3;
         }
-
         .main-content {
             margin-top: 80px;
             padding: 20px 50px;
         }
-
         .hero-section {
-            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), 
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
                         url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23222" width="1200" height="600"/><g fill="%23333"><circle cx="200" cy="150" r="3"/><circle cx="800" cy="200" r="2"/><circle cx="400" cy="350" r="4"/><circle cx="1000" cy="400" r="2"/><circle cx="600" cy="100" r="3"/></g></svg>');
             background-size: cover;
             border-radius: 10px;
@@ -66,27 +59,23 @@
             margin-bottom: 40px;
             text-align: center;
         }
-
         .hero-title {
             font-size: 48px;
             font-weight: bold;
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
         }
-
         .hero-subtitle {
             font-size: 18px;
             color: #b3b3b3;
             margin-bottom: 30px;
         }
-
         .input-methods {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
         }
-
         .input-card {
             background: rgba(255,255,255,0.1);
             border: 2px solid #333;
@@ -96,41 +85,34 @@
             transition: all 0.3s ease;
             cursor: pointer;
         }
-
         .input-card:hover {
             border-color: #e50914;
             background: rgba(229,9,20,0.1);
             transform: translateY(-5px);
         }
-
         .input-card.active {
             border-color: #e50914;
             background: rgba(229,9,20,0.1);
         }
-
         .input-icon {
             font-size: 48px;
             margin-bottom: 15px;
             display: block;
         }
-
         .input-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 10px;
         }
-
         .input-desc {
             font-size: 14px;
             color: #b3b3b3;
         }
-
         .canvas-container {
             display: flex;
             justify-content: center;
             margin: 30px 0;
         }
-
         #drawingCanvas {
             border: 2px solid #333;
             border-radius: 10px;
@@ -138,7 +120,6 @@
             cursor: crosshair;
             display: none;
         }
-
         .camera-container {
             display: none;
             flex-direction: column;
@@ -146,7 +127,6 @@
             gap: 20px;
             margin: 30px 0;
         }
-
         #cameraVideo {
             border: 2px solid #333;
             border-radius: 10px;
@@ -155,14 +135,12 @@
             height: 280px;
             object-fit: cover;
         }
-
         #capturedImage {
             border: 2px solid #333;
             border-radius: 10px;
             max-width: 280px;
             display: none;
         }
-
         .controls {
             display: flex;
             justify-content: center;
@@ -170,7 +148,6 @@
             margin: 20px 0;
             flex-wrap: wrap;
         }
-
         .control-btn {
             background: #333;
             color: white;
@@ -181,28 +158,23 @@
             transition: all 0.3s ease;
             font-size: 14px;
         }
-
         .control-btn:hover {
             background: #555;
             transform: translateY(-2px);
         }
-
         .control-btn.primary {
             background: linear-gradient(45deg, #e50914, #f40612);
             box-shadow: 0 4px 15px rgba(229,9,20,0.3);
         }
-
         .control-btn.primary:hover {
             box-shadow: 0 8px 25px rgba(229,9,20,0.4);
         }
-
         .comparison-results {
             display: none;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
             margin: 30px 0;
         }
-
         .model-result {
             background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
             border-radius: 15px;
@@ -211,37 +183,31 @@
             border: 2px solid transparent;
             transition: all 0.3s ease;
         }
-
         .model-result.winner {
             border-color: #e50914;
             box-shadow: 0 10px 30px rgba(229,9,20,0.3);
         }
-
         .model-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 20px;
             color: #e50914;
         }
-
         .result-digit {
             font-size: 64px;
             font-weight: bold;
             margin-bottom: 15px;
             text-shadow: 0 0 10px rgba(229,9,20,0.3);
         }
-
         .result-confidence {
             font-size: 16px;
             color: #b3b3b3;
             margin-bottom: 10px;
         }
-
         .result-time {
             font-size: 12px;
             color: #666;
         }
-
         .section-title {
             font-size: 24px;
             font-weight: bold;
@@ -249,7 +215,6 @@
             color: #ffffff;
             position: relative;
         }
-
         .section-title::after {
             content: '';
             position: absolute;
@@ -259,7 +224,6 @@
             height: 3px;
             background: #e50914;
         }
-
         .results-container {
             display: flex;
             overflow-x: auto;
@@ -268,21 +232,17 @@
             scrollbar-width: thin;
             scrollbar-color: #e50914 #333;
         }
-
         .results-container::-webkit-scrollbar {
             height: 8px;
         }
-
         .results-container::-webkit-scrollbar-track {
             background: #333;
             border-radius: 4px;
         }
-
         .results-container::-webkit-scrollbar-thumb {
             background: #e50914;
             border-radius: 4px;
         }
-
         .result-card {
             min-width: 200px;
             background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
@@ -294,7 +254,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .result-card::before {
             content: '';
             position: absolute;
@@ -305,46 +264,38 @@
             background: linear-gradient(90deg, transparent, rgba(229,9,20,0.2), transparent);
             transition: all 0.8s ease;
         }
-
         .result-card:hover::before {
             left: 100%;
         }
-
         .result-card:hover {
             transform: translateY(-10px) scale(1.05);
             border-color: #e50914;
             box-shadow: 0 10px 30px rgba(229,9,20,0.3);
         }
-
         .result-card .result-digit {
             font-size: 36px;
             color: #e50914;
             margin-bottom: 10px;
         }
-
         .result-card .result-confidence {
             font-size: 14px;
             margin-bottom: 10px;
         }
-
         .result-card .result-time {
             font-size: 12px;
         }
-
         .no-results {
             text-align: center;
             color: #666;
             font-style: italic;
             padding: 40px;
         }
-
         .loading {
             display: none;
             text-align: center;
             color: #e50914;
             margin: 20px 0;
         }
-
         .spinner {
             border: 3px solid #333;
             border-top: 3px solid #e50914;
@@ -354,37 +305,29 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 10px;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
         @media (max-width: 768px) {
             .header {
                 padding: 15px 20px;
             }
-            
             .main-content {
                 padding: 20px;
             }
-            
             .hero-title {
                 font-size: 32px;
             }
-            
             .hero-section {
                 padding: 40px 20px;
             }
-
             .comparison-results {
                 grid-template-columns: 1fr;
             }
-
             .controls {
                 justify-content: center;
             }
-
             .control-btn {
                 padding: 10px 16px;
                 font-size: 12px;
@@ -406,13 +349,11 @@
             </div>
         </div>
     </div>
-
     <div class="main-content">
         <div class="hero-section">
             <h1 class="hero-title">DigitFlix Recognition</h1>
             <p class="hero-subtitle">Compare AI models with drawing, camera, or upload - Netflix style browsing included!</p>
         </div>
-
         <div class="input-methods">
             <div class="input-card" onclick="selectInputMethod('draw')">
                 <span class="input-icon">✏️</span>
@@ -430,18 +371,14 @@
                 <div class="input-desc">Upload an image file with a digit</div>
             </div>
         </div>
-
         <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-
         <div class="canvas-container">
             <canvas id="drawingCanvas" width="280" height="280"></canvas>
         </div>
-
         <div class="camera-container">
             <video id="cameraVideo" autoplay playsinline></video>
             <img id="capturedImage" alt="Captured digit">
         </div>
-
         <div class="controls">
             <button class="control-btn" id="clearBtn" onclick="clearCanvas()">🗑️ Clear</button>
             <button class="control-btn" id="captureBtn" onclick="capturePhoto()" style="display: none;">📸 Capture</button>
@@ -450,12 +387,10 @@
             <button class="control-btn primary" onclick="recognizeDigit()">🧠 Recognize Both Models</button>
             <button class="control-btn" onclick="downloadImage()">💾 Download</button>
         </div>
-
         <div class="loading">
             <div class="spinner"></div>
             <div>Loading AI models and processing...</div>
         </div>
-
         <div class="comparison-results" id="comparisonResults">
             <div class="model-result" id="pretrainedResult">
                 <div class="model-title">🤖 Pretrained TensorFlow Model</div>
@@ -470,15 +405,11 @@
                 <div class="result-time" id="customTime">0ms</div>
             </div>
         </div>
-
         <h2 class="section-title">Recognition History</h2>
         <div class="results-container" id="resultsContainer">
             <div class="no-results">No previous results yet. Try drawing, capturing, or uploading a digit!</div>
         </div>
-
-
     </div>
-
     <script>
         let canvas, ctx;
         let isDrawing = false;
@@ -486,16 +417,35 @@
         let currentInputMethod = 'draw';
         let cameraStream = null;
         let stats = { pretrained: { wins: 0, total: 0 }, custom: { wins: 0, total: 0 } };
+        let pretrainedModel = null;
+        let customModel = null;
 
         // Initialize everything
-        function init() {
+        async function init() {
             console.log('Initializing DigitFlix...');
             initCanvas();
             updateClock();
             updateLocation();
             setInterval(updateClock, 1000);
             selectInputMethod('draw');
-            
+
+            // Load models
+            document.querySelector('.loading').style.display = 'block';
+            try {
+                // Load pretrained MNIST model
+                pretrainedModel = await tf.loadLayersModel('https://storage.googleapis.com/tfjs-models/tfjs/mnist/v1/model.json');
+                console.log('Pretrained MNIST model loaded');
+
+                // For simplicity, custom model is a clone of pretrained model
+                // In a real app, you'd load a different custom-trained model
+                customModel = pretrainedModel; // Placeholder: replace with actual custom model if available
+                console.log('Custom model loaded');
+            } catch (error) {
+                console.error('Error loading models:', error);
+                alert('Failed to load AI models. Please try again later.');
+            }
+            document.querySelector('.loading').style.display = 'none';
+
             // Add some demo results
             setTimeout(() => {
                 addDemoResults();
@@ -507,13 +457,11 @@
             canvas = document.getElementById('drawingCanvas');
             ctx = canvas.getContext('2d');
             clearCanvas();
-
             // Mouse events
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
-
             // Touch events
             canvas.addEventListener('touchstart', handleTouch);
             canvas.addEventListener('touchmove', handleTouch);
@@ -527,11 +475,9 @@
 
         function draw(e) {
             if (!isDrawing) return;
-
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
             const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
-
             ctx.lineTo(x, y);
             ctx.stroke();
             ctx.beginPath();
@@ -549,8 +495,8 @@
             e.preventDefault();
             const touch = e.touches[0];
             const mouseEvent = new MouseEvent(
-                e.type === 'touchstart' ? 'mousedown' : 
-                e.type === 'touchmove' ? 'mousemove' : 'mouseup', 
+                e.type === 'touchstart' ? 'mousedown' :
+                e.type === 'touchmove' ? 'mousemove' : 'mouseup',
                 {
                     clientX: touch.clientX,
                     clientY: touch.clientY
@@ -570,14 +516,14 @@
         // Input method selection
         function selectInputMethod(method) {
             currentInputMethod = method;
-            
+
             // Update UI
             document.querySelectorAll('.input-card').forEach(card => {
                 card.classList.remove('active');
             });
-            
+
             document.querySelector(`[onclick="selectInputMethod('${method}')"]`).classList.add('active');
-            
+
             // Show/hide relevant controls
             const canvas = document.getElementById('drawingCanvas');
             const cameraContainer = document.querySelector('.camera-container');
@@ -585,7 +531,7 @@
             const captureBtn = document.getElementById('captureBtn');
             const startCameraBtn = document.getElementById('startCameraBtn');
             const stopCameraBtn = document.getElementById('stopCameraBtn');
-            
+
             // Reset visibility
             canvas.style.display = 'none';
             cameraContainer.style.display = 'none';
@@ -593,7 +539,7 @@
             captureBtn.style.display = 'none';
             startCameraBtn.style.display = 'none';
             stopCameraBtn.style.display = 'none';
-            
+
             switch(method) {
                 case 'draw':
                     canvas.style.display = 'block';
@@ -612,21 +558,21 @@
         // Camera functionality
         async function startCamera() {
             try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        width: 280, 
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: 280,
                         height: 280,
-                        facingMode: 'environment' 
-                    } 
+                        facingMode: 'environment'
+                    }
                 });
-                
+
                 const video = document.getElementById('cameraVideo');
                 video.srcObject = cameraStream;
-                
+
                 document.getElementById('startCameraBtn').style.display = 'none';
                 document.getElementById('stopCameraBtn').style.display = 'inline-block';
                 document.getElementById('captureBtn').style.display = 'inline-block';
-                
+
             } catch (error) {
                 console.error('Error accessing camera:', error);
                 alert('Unable to access camera. Please check permissions.');
@@ -638,7 +584,7 @@
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
             }
-            
+
             document.getElementById('startCameraBtn').style.display = 'inline-block';
             document.getElementById('stopCameraBtn').style.display = 'none';
             document.getElementById('captureBtn').style.display = 'none';
@@ -647,20 +593,23 @@
         function capturePhoto() {
             const video = document.getElementById('cameraVideo');
             const capturedImage = document.getElementById('capturedImage');
-            
+
             // Create canvas to capture frame
             const captureCanvas = document.createElement('canvas');
             captureCanvas.width = 280;
             captureCanvas.height = 280;
             const captureCtx = captureCanvas.getContext('2d');
-            
+
             captureCtx.drawImage(video, 0, 0, 280, 280);
-            
+
             // Show captured image
             capturedImage.src = captureCanvas.toDataURL();
             capturedImage.style.display = 'block';
             video.style.display = 'none';
-            
+
+            // Copy to main canvas for processing
+            ctx.drawImage(captureCanvas, 0, 0, canvas.width, canvas.height);
+
             stopCamera();
         }
 
@@ -678,41 +627,110 @@
             }
         });
 
+        // Preprocess image for MNIST model
+        function preprocessImage(imageElement) {
+            // Create temporary canvas
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 28;
+            tempCanvas.height = 28;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Draw image to 28x28 canvas
+            tempCtx.drawImage(imageElement, 0, 0, 28, 28);
+
+            // Get image data
+            const imageData = tempCtx.getImageData(0, 0, 28, 28);
+            const data = imageData.data;
+
+            // Convert to grayscale and normalize
+            const grayscale = new Float32Array(28 * 28);
+            for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+                const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                grayscale[j] = gray / 255.0;
+            }
+
+            // Reshape to [1, 28, 28, 1]
+            const tensor = tf.tensor4d(grayscale, [1, 28, 28, 1]);
+            return tensor;
+        }
+
+        // Predict digit using model
+        async function predictDigit(model, tensor) {
+            const startTime = performance.now();
+            const output = model.predict(tensor);
+            const probabilities = await output.softmax().data();
+            const endTime = performance.now();
+
+            const maxIndex = probabilities.indexOf(Math.max(...probabilities));
+            const confidence = Math.round(probabilities[maxIndex] * 100);
+
+            return {
+                digit: maxIndex,
+                confidence: confidence,
+                time: Math.round(endTime - startTime)
+            };
+        }
+
         // Recognition functionality
         async function recognizeDigit() {
             const loading = document.querySelector('.loading');
-            const results = document.getElementById('comparisonResults');
-            
+            const resultsDiv = document.getElementById('comparisonResults');
+
             loading.style.display = 'block';
-            results.style.display = 'none';
-            
+            resultsDiv.style.display = 'none';
+
+            // Validate input based on current method
+            let hasValidInput = false;
+            let inputImage = canvas;
+
+            if (currentInputMethod === 'draw' || currentInputMethod === 'upload') {
+                // Check if canvas has any drawing
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const pixels = imageData.data;
+                for (let i = 0; i < pixels.length; i += 4) {
+                    if (pixels[i] < 255 || pixels[i + 1] < 255 || pixels[i + 2] < 255) {
+                        hasValidInput = true;
+                        break;
+                    }
+                }
+            } else if (currentInputMethod === 'camera') {
+                const capturedImage = document.getElementById('capturedImage');
+                hasValidInput = capturedImage.style.display !== 'none' && capturedImage.src;
+                inputImage = capturedImage;
+            }
+
+            if (!hasValidInput) {
+                loading.style.display = 'none';
+                alert('Please draw a digit, capture a photo, or upload an image first!');
+                return;
+            }
+
+            if (!pretrainedModel || !customModel) {
+                loading.style.display = 'none';
+                alert('Models not loaded yet. Please try again.');
+                return;
+            }
+
             try {
-                // Simulate processing time
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Generate results for both models
-                const pretrainedResult = {
-                    digit: Math.floor(Math.random() * 10),
-                    confidence: 85 + Math.floor(Math.random() * 12)
-                };
-                
-                const customResult = {
-                    digit: Math.floor(Math.random() * 10),
-                    confidence: 70 + Math.floor(Math.random() * 25)
-                };
-                
-                const pretrainedTime = 80 + Math.floor(Math.random() * 40);
-                const customTime = 120 + Math.floor(Math.random() * 80);
-                
-                displayResults(pretrainedResult, customResult, pretrainedTime, customTime);
-                storeResult(pretrainedResult, customResult, pretrainedTime, customTime);
-                
+                // Preprocess image
+                const tensor = preprocessImage(inputImage);
+
+                // Make predictions
+                const pretrainedResult = await predictDigit(pretrainedModel, tensor);
+                const customResult = await predictDigit(customModel, tensor);
+
+                // Display and store results
+                displayResults(pretrainedResult, customResult, pretrainedResult.time, customResult.time);
+                storeResult(pretrainedResult, customResult, pretrainedResult.time, customResult.time);
+
+                // Clean up
+                tensor.dispose();
             } catch (error) {
                 console.error('Recognition error:', error);
-                alert('Error during recognition. Please try again.');
-            } finally {
-                loading.style.display = 'none';
+                alert('Error processing the image. Please try again.');
             }
+
+            loading.style.display = 'none';
         }
 
         function displayResults(pretrained, custom, pretrainedTime, customTime) {
@@ -720,19 +738,19 @@
             document.getElementById('pretrainedDigit').textContent = pretrained.digit;
             document.getElementById('pretrainedConfidence').textContent = `${pretrained.confidence}% confidence`;
             document.getElementById('pretrainedTime').textContent = `${pretrainedTime}ms`;
-            
+
             // Update custom result
             document.getElementById('customDigit').textContent = custom.digit;
             document.getElementById('customConfidence').textContent = `${custom.confidence}% confidence`;
             document.getElementById('customTime').textContent = `${customTime}ms`;
-            
+
             // Determine winner
             const pretrainedCard = document.getElementById('pretrainedResult');
             const customCard = document.getElementById('customResult');
-            
+
             pretrainedCard.classList.remove('winner');
             customCard.classList.remove('winner');
-            
+
             if (pretrained.confidence > custom.confidence) {
                 pretrainedCard.classList.add('winner');
                 stats.pretrained.wins++;
@@ -740,10 +758,10 @@
                 customCard.classList.add('winner');
                 stats.custom.wins++;
             }
-            
+
             stats.pretrained.total++;
             stats.custom.total++;
-            
+
             document.getElementById('comparisonResults').style.display = 'grid';
             updateStats();
         }
@@ -755,28 +773,28 @@
                 timestamp: new Date(),
                 inputMethod: currentInputMethod
             };
-            
+
             results.unshift(result);
             if (results.length > 20) results.pop();
-            
+
             updateResultsDisplay();
         }
 
         function updateResultsDisplay() {
             const container = document.getElementById('resultsContainer');
-            
+
             if (results.length === 0) {
                 container.innerHTML = '<div class="no-results">No previous results yet. Try drawing, capturing, or uploading a digit!</div>';
                 return;
             }
-            
+
             container.innerHTML = results.map(result => {
                 const winner = result.pretrained.confidence > result.custom.confidence ? 'Pretrained' : 'Custom';
                 const winnerDigit = winner === 'Pretrained' ? result.pretrained.digit : result.custom.digit;
                 const winnerConfidence = winner === 'Pretrained' ? result.pretrained.confidence : result.custom.confidence;
-                
+
                 const methodIcons = { draw: '✏️', camera: '📷', upload: '📁' };
-                
+
                 return `
                     <div class="result-card">
                         <div class="result-digit">${winnerDigit}</div>
@@ -790,11 +808,9 @@
             }).join('');
         }
 
-
-
         function downloadImage() {
             let dataURL;
-            
+
             if (currentInputMethod === 'camera') {
                 const capturedImage = document.getElementById('capturedImage');
                 if (capturedImage.style.display === 'none') {
@@ -805,7 +821,7 @@
             } else {
                 dataURL = canvas.toDataURL();
             }
-            
+
             const link = document.createElement('a');
             link.download = `digit_${new Date().getTime()}.png`;
             link.href = dataURL;
@@ -818,7 +834,7 @@
                 { pretrained: { digit: 3, confidence: 92, time: 78 }, custom: { digit: 8, confidence: 82, time: 165 }, timestamp: new Date(Date.now() - 600000), inputMethod: 'camera' },
                 { pretrained: { digit: 9, confidence: 96, time: 92 }, custom: { digit: 9, confidence: 88, time: 140 }, timestamp: new Date(Date.now() - 900000), inputMethod: 'upload' }
             ];
-            
+
             results.push(...demoResults);
             updateResultsDisplay();
         }
@@ -844,6 +860,11 @@
             } else {
                 document.getElementById('locationText').textContent = 'Geolocation not supported';
             }
+        }
+
+        // Stats update (optional, if you want to display stats)
+        function updateStats() {
+            // Implement if needed
         }
 
         // Initialize when page loads
